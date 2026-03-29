@@ -38,6 +38,7 @@ URL_ACTION_LOGIN = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2lu
 BASE_TARGET_URL = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2luZGV4LnBocC9ob21lL3Jlc2VydmFzaV9kb2t0ZXIvdGFtYmFoLw==")
 
 session = requests.Session()
+session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'})
 lock = threading.Lock()
 hasil_data = []
 
@@ -172,10 +173,8 @@ def main_menu():
                 print("[\033[91m!\033[0m] Error: Input harus berupa angka.")
             input("\nTekan Enter untuk kembali ke menu...")
         elif choice == '3':
-            AWAL = int(_decode("NTAwMDAw"))
-            AKHIR = int(_decode("NTEwNTAw"))
-            AWAL = 502013
-            AKHIR = 511858
+            AWAL = 502013 # Menggunakan range dari kode sukses Anda
+            AKHIR = 511858 # Menggunakan range dari kode sukses Anda
             start_process(AWAL, AKHIR)
             input("\nTekan Enter untuk kembali ke menu...")
         elif choice == '0':
