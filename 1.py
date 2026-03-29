@@ -26,9 +26,9 @@ def show_banner():
 # Encrypted System Credentials
 NO_RM = _decode("MDA1MTA0ODE=")
 TGL_LAHIR = _decode("MzExMjE5NjA=")
-URL_HAL_LOGIN = "https://dolan.rsudsoetijonoblora.com/index.php/app/auth/login"
-URL_ACTION_LOGIN = "https://dolan.rsudsoetijonoblora.com/index.php/app/auth/login_action"
-BASE_TARGET_URL = "https://dolan.rsudsoetijonoblora.com/index.php/home/reservasi_dokter/tambah/"
+URL_HAL_LOGIN = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2luZGV4LnBocC9hcHAvYXV0aC9sb2dpbg==")
+URL_ACTION_LOGIN = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2luZGV4LnBocC9hcHAvYXV0aC9sb2dpbl9hY3Rpb24=")
+BASE_TARGET_URL = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2luZGV4LnBocC9ob21lL3Jlc2VydmFzaV9kb2t0ZXIvdGFtYmFoLw==")
 
 session = requests.Session()
 
