@@ -111,12 +111,16 @@ def fetch_data(id_num):
         all_sales = soup.find_all('p', class_='sale-price')
         nama = ""
 
-        # Logika ekstraksi nama sesuai struktur yang terbukti berhasil (mencari label Nama Pasien)
-        for i, p in enumerate(all_sales):
-            txt = p.get_text(strip=True)
-            if "Nama Pasien" in txt and i + 1 < len(all_sales):
-                nama = all_sales[i+1].get_text(strip=True)
-                break
+        # Logika ekstraksi nama yang lebih kuat (Class + Label Fallback)
+        nama_tag = soup.find('p', class_='sale-price text-success')
+        if nama_tag:
+            nama = nama_tag.get_text(strip=True)
+        if not nama:
+            for i, p in enumerate(all_sales):
+                txt = p.get_text(strip=True)
+                if "Nama Pasien" in txt and i + 1 < len(all_sales):
+                    nama = all_sales[i+1].get_text(strip=True)
+                    break
 
         if nama:
             alamat = "Tidak Ditemukan"
@@ -429,7 +433,7 @@ def main_menu():
         elif choice == '2':
             try:
                 count = int(input("[?] Jumlah data yang ingin di scan: "))
-                BASE_ID = int(_decode("NTAyMDEz")) 
+                BASE_ID = int(NO_RM)
                 # Membuat list ID secara urut (Sequential)
                 id_pool = list(range(BASE_ID, BASE_ID + count))
                 # random.shuffle(id_pool) <-- Baris ini dinonaktifkan
