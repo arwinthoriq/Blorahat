@@ -193,7 +193,7 @@ def parameter_discovery_audit():
                         attempt += 1
                         # Mencari secara acak dalam radius 50 dari No RM acuan Opsi 2 (502013)
                         acuan_rm = int(_decode("NTAyMDEz"))
-                        test_id = str(acuan_rm + random.randint(-500, 500)).zfill(len(original_id))
+                        test_id = str(acuan_rm + random.randint(-50, 50)).zfill(len(original_id))
                         test_url = base_url.replace(original_id, test_id)
                         
                         # Heartbeat pencarian
