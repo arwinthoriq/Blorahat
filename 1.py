@@ -193,7 +193,7 @@ def parameter_discovery_audit():
                     # Pre-Check: Cek apakah halaman ini memiliki struktur yang bisa di-ekstrak
                     print(f"[*] Pre-checking URL structure...")
                     check_res = session.get(base_url, timeout=5)
-                    if not check_res.find(_decode("c2FsZS1wcmljZQ==")): # sale-price
+                    if _decode("c2FsZS1wcmljZQ==") not in check_res.text: # sale-price
                         print(f"[\033[93m!\033[0m] Warning: Endpoint ini mungkin tidak memiliki data Nama/Alamat.")
                         confirm = input("[?] Tetap lanjutkan pemindaian 501 ID? (y/n): ")
                         if confirm.lower() != 'y': break
