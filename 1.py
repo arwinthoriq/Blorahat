@@ -191,8 +191,8 @@ def parameter_discovery_audit():
                     attempt = 0
                     while not found_valid:
                         attempt += 1
-                        # Mencari secara acak dalam radius 50 dari acuan Opsi 2 (502013)
-                        acuan_rm = int(_decode("NTAyMDEz"))
+                        # Mencari secara acak dalam radius 50 dari acuan No RM (00510481)
+                        acuan_rm = int(_decode("MDA1MTA0ODE="))
                         test_id = str(acuan_rm + random.randint(-50, 50)).zfill(12)
                         test_url = base_url.replace(original_id, test_id)
                         
