@@ -163,7 +163,8 @@ def main_menu():
                 print("[\033[91m!\033[0m] Error: Input harus berupa angka.")
             input("\nTekan Enter untuk kembali ke menu...")
         elif choice == '3':
-            audit_security_config()
+            if login():
+                audit_security_config()
             input("\nTekan Enter untuk kembali ke menu...")
         elif choice == '0':
             print("Happy Auditing!")
