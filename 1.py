@@ -188,7 +188,7 @@ def parameter_discovery_audit():
                     print(f"[*] Executing Automated Discovery (Searching for valid record)...")
                     
                     found_valid = False
-                    max_attempts = 50 # Mencoba hingga 50 kali untuk menemukan data valid
+                    max_attempts = 999 # Mencoba hingga 50 kali untuk menemukan data valid
                     
                     for attempt in range(1, max_attempts + 1):
                         offset = random.randint(-300, 300)
