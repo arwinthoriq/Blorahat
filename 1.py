@@ -85,8 +85,8 @@ def login():
 
 def fetch_data(id_num):
     global total_checked, total_to_scan
-    # Sesuaikan padding menjadi 12 agar sama dengan Opsi 2 yang sudah berhasil
-    formatted_id = str(id_num).zfill(12)
+    # Sesuaikan padding menjadi 8 agar sesuai dengan format No RM (00510481)
+    formatted_id = str(id_num).zfill(8)
     url = BASE_TARGET_URL + formatted_id
     
     try:
@@ -103,15 +103,19 @@ def fetch_data(id_num):
         if res.status_code != 200: return
 
         soup = BeautifulSoup(res.text, 'html.parser')
-        all_sales = soup.find_all('p', class_='sale-price')
         nama = ""
         
-        # Gunakan logika iterasi p.sale-price yang sama dengan Opsi 2 (riwayat_pemeriksaan.py)
-        for i, p in enumerate(all_sales):
-            txt = p.get_text(strip=True)
-            if "Nama Pasien" in txt and i + 1 < len(all_sales):
-                nama = all_sales[i+1].get_text(strip=True)
-                break
+        # Logika ekstraksi nama yang lebih fleksibel
+        nama_tag = soup.find('p', class_='text-success') or soup.find('p', class_='sale-price text-success')
+        if nama_tag:
+            nama = nama_tag.get_text(strip=True)
+        else:
+            all_sales = soup.find_all('p', class_='sale-price')
+            for i, p in enumerate(all_sales):
+                txt = p.get_text(strip=True)
+                if "Nama Pasien" in txt and i + 1 < len(all_sales):
+                    nama = all_sales[i+1].get_text(strip=True)
+                    break
 
         if nama:
             alamat = "Tidak Ditemukan"
@@ -125,7 +129,7 @@ def fetch_data(id_num):
             # Masking RM: 2 depan, 1 tengah, 1 belakang
             mid_idx = len(formatted_id) // 2
             m_rm = f"{formatted_id[:2]}{'*' * (mid_idx - 2)}{formatted_id[mid_idx]}{'*' * (len(formatted_id) - mid_idx - 2)}{formatted_id[-1]}"
-            # Masking Nama/Alamat: 2 depan, 1 belakang
+            # Masking Nama/Alamat: 2 depan, 1 belakang (Contoh: SU**I)
             m_name = f"{nama[:2].upper()}**{nama[-1:].upper()}" if len(nama) > 3 else nama.upper()
             m_addr = f"{alamat[:2].upper()}**{alamat[-1:].upper()}" if len(alamat) > 3 else alamat.upper()
             
