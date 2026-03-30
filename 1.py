@@ -181,7 +181,7 @@ def parameter_discovery_audit():
                         continue
 
                     # 1. Tampilkan Target Awal (Masking digit ke-3 dari belakang)
-                    poc_mask = "*" * (len(original_id) - 3) + original_id[-3] + "**"
+                    poc_mask = "*" * (len(original_id) - 2) + original_id[-1] + "**"
                     print(f"\n[*] Target Selected: {base_url.replace(original_id, poc_mask)}")
                     
                     # 2. Automated Manipulation Test
