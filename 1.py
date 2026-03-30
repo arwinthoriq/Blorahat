@@ -9,6 +9,8 @@ from concurrent.futures import ThreadPoolExecutor
 import time
 import random
 import re
+import socket
+from urllib.parse import urlparse
 
 def clear():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -425,6 +427,49 @@ def vulnerability_audit():
     print(f"[*] Fix Suggestion              : Gunakan Prepared Statements (PDO) & Sanitize Input (HTML Purifier)")
     print("="*85 + "\n")
 
+def infrastructure_audit():
+    ts_init = time.strftime("%H:%M:%S")
+    print(f"\n\033[92m" + "="*85)
+    print(f" [{time.strftime('%Y-%m-%d %H:%M:%S')}] BLORAHAT INFRASTRUCTURE SECURITY AUDIT")
+    print("="*85 + "\033[0m")
+    
+    target_url = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tLw==")
+    domain = urlparse(target_url).hostname
+    
+    print(f"[*] Target Host        : {domain}")
+    print(f"[*] Audit Type         : Port Discovery & Service Probing")
+    print("-" * 85)
+    
+    common_ports = {
+        21: "FTP", 22: "SSH", 23: "Telnet", 25: "SMTP", 53: "DNS",
+        80: "HTTP", 110: "POP3", 143: "IMAP", 443: "HTTPS", 445: "SMB",
+        3306: "MySQL", 3389: "RDP", 5432: "PostgreSQL", 8080: "HTTP-Proxy"
+    }
+    
+    open_ports = 0
+    for port, service in common_ports.items():
+        ts = time.strftime("%H:%M:%S")
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(1.5)
+            result = sock.connect_ex((domain, port))
+            if result == 0:
+                print(f" [{ts}] Port {str(port).ljust(5)} ({service.ljust(10)}) : [\033[91mOPEN\033[0m]")
+                open_ports += 1
+                try:
+                    sock.send(b"\r\n")
+                    banner = sock.recv(1024).decode('utf-8', errors='ignore').strip()
+                    if banner: print(f"      |_ Service Info: {banner[:60]}")
+                except: pass
+            sock.close()
+        except: pass
+
+    print("-" * 85)
+    print(f"[*] Audit Selesai pada: {time.strftime('%H:%M:%S')}")
+    print(f"[*] Port Terbuka      : {open_ports}")
+    print(f"[*] Rekomendasi       : Batasi akses publik pada port layanan internal.")
+    print("="*85 + "\n")
+
 def start_process(id_list):
     global total_checked, total_to_scan
     total_checked = 0
@@ -446,6 +491,7 @@ def main_menu():
         print(" [3] Security Config Audit (Headers & Files)")
         print(" [4] Parameter Discovery (URL Tampering Scan)")
         print(" [5] Vulnerability Scan (SQLi & XSS Testing)")
+        print(" [6] Infrastructure Audit (Port Scan & Service Mapping)")
         print(" [0] Exit")
         print("\n")
         
@@ -476,6 +522,10 @@ def main_menu():
         elif choice == '5':
             if login():
                 vulnerability_audit()
+            input("\nTekan Enter untuk kembali ke menu...")
+        elif choice == '6':
+            if login():
+                infrastructure_audit()
             input("\nTekan Enter untuk kembali ke menu...")
         elif choice == '0':
             print("Happy Auditing!")
