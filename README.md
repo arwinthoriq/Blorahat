@@ -1,40 +1,68 @@
-# BloraHat Security Audit Tool v2.0
+# BloraHat Professional Security Audit Framework v2.0
 
 ![Python](https://img.shields.io/badge/Python-3.x-green.svg)
-![License](https://img.shields.io/badge/License-Open%20Source-blue.svg)
+![License](https://img.shields.io/badge/License-Confidential-red.svg)
 
-BloraHat adalah instrumen audit keamanan yang dirancang untuk menguji ketahanan sistem informasi terhadap kerentanan **Broken Authentication** dan **Insecure Direct Object Reference (IDOR)**.
+BloraHat adalah instrumen assessment keamanan tingkat lanjut yang dirancang untuk membantu auditor sistem informasi dalam memetakan permukaan serangan (*attack surface*) dan menguji ketahanan infrastruktur aplikasi web terhadap berbagai vektor ancaman siber modern.
 
 ## ⚠️ Disclaimer
-Alat ini dibuat murni untuk tujuan **Security Testing** dan **Edukasi**. Segala bentuk penyalahgunaan terhadap sistem tanpa izin pemilik otoritas adalah tanggung jawab pengguna sepenuhnya. Penulis tidak bertanggung jawab atas kerugian yang ditimbulkan.
+Alat ini dikembangkan khusus untuk tujuan **Security Auditing**, **Penetration Testing**, dan **Edukasi**. Segala bentuk penggunaan terhadap target sistem tanpa izin tertulis dari pihak otoritas terkait adalah sepenuhnya tanggung jawab pengguna. Pengembang tidak bertanggung jawab atas kerugian atau dampak hukum yang timbul dari penyalahgunaan instrumen ini.
 
 ## Fitur Utama
-- **Captcha Bypass Testing**: Menguji validasi sisi server terhadap parameter verifikasi captcha.
-- **Session Token Hijacking**: Automasi perolehan token sesi setelah bypass autentikasi.
-- **IDOR Scanner**: Mendeteksi kebocoran data pasien melalui manipulasi parameter objek pada URL secara konkuren.
+- **Automated Authentication Probing**: Menguji integritas mekanisme validasi input pada gerbang otentikasi termasuk pengujian bypass otomatis.
+- **Object Identifier Assessment (IDOR)**: Pemindaian kerentanan pada manipulasi identifier record secara sekuensial dan konkuren untuk mendeteksi potensi kebocoran informasi.
+- **Deep Infrastructure Audit**: Pemindaian port jaringan, identifikasi versi layanan (*banner grabbing*), dan probing mendalam pada port layanan administratif (seperti Port 8080).
+- **Vulnerability Injection Suite**: Modul audit otomatis untuk mendeteksi celah *Injection* (Error & Time-Based) serta *Cross-Scripting* pada berbagai endpoint secara simultan.
+- **Advanced Evasion & Cache Audit**: Simulasi teknik manipulasi header untuk *IP Masking*, pengujian *Server-Side Request Forgery* (SSRF), dan analisis integritas *Web Cache*.
+- **Self-Healing Environment**: Logika internal yang mampu mendeteksi dan memperbaiki kerusakan dependensi secara mandiri untuk menjamin stabilitas eksekusi.
 
-## Instalasi
+## 🛠️ Instalasi dan Persiapan
 
-1. Clone repositori ini:
+Framework ini dirancang dengan pendekatan **Zero-Configuration** agar dapat langsung digunakan oleh auditor tanpa hambatan teknis instalasi.
+
+### Metode 1: Windows (Auto-Launcher) - *Rekomendasi*
+Cukup jalankan file `launcher.bat`. Sistem akan secara otomatis melakukan:
+1. Validasi lingkungan Python di sistem operasi.
+2. Instalasi otomatis jika komponen Python belum terdeteksi (via Winget).
+3. Konfigurasi otomatis library pendukung melalui manajemen PIP internal.
+4. Perbaikan mandiri (*Self-Healing*) jika ditemukan pustaka yang korup atau hilang.
+5. Eksekusi modul utama secara instan.
+
+### Metode 2: Manual Setup
+Jika Anda ingin mengatur lingkungan secara manual:
+1. Pastikan sistem Anda telah terpasang Python 3.10+.
+2. Pasang seluruh dependensi yang diperlukan:
    ```bash
-   git clone https://github.com/arwinthoriq/blorahat.git
-   cd blorahat
+   python -m pip install -r requirements.txt
    ```
-2. Instal dependensi:
+3. Jalankan framework:
    ```bash
-   pip install -r requirements.txt
+   python main.py
    ```
 
-## Penggunaan
+## 🖥️ Alur Kerja Audit
 
-Jalankan menu utama untuk memilih mode audit:
-```bash
-python main.py
-```
+Setelah aplikasi berjalan, pengguna dapat mengakses berbagai modul audit melalui menu interaktif:
 
-### Konfigurasi Target
-Anda dapat mengubah range target ID Rekam Medis pada file `1.py` di bagian:
-```python
-AWAL = int(_decode("NTAwMDAw"))
-AKHIR = int(_decode("NTEwNTAw"))
-```
+1. **Auth Test**: Modul untuk memverifikasi ketahanan enkapsulasi token dan validasi input otentikasi.
+2. **Object Identifier Scan**: Melakukan iterasi pada identifier sistem untuk mengidentifikasi celah otorisasi horizontal.
+3. **Security Config Audit**: Menganalisis *Security Headers* dan melakukan penelusuran terhadap jalur direktori sensitif yang terekspos.
+4. **Parameter Discovery**: Melakukan pemetaan URL internal secara cerdas dan mensimulasikan manipulasi variabel jalur (*path variables*).
+5. **Vulnerability Scan**: Audit injeksi mendalam menggunakan berbagai payload standar industri untuk mendeteksi kelemahan sanitasi input.
+6. **Infrastructure Audit**: Melakukan pemetaan layanan jaringan dan *service probing* untuk menemukan vektor serangan pada level layanan backend.
+7. **Advanced Evasion**: Menguji kebijakan keamanan jaringan terhadap teknik *spoofing* dan eksploitasi dependensi eksternal.
+
+## 🔐 Keamanan Source Code
+
+Framework ini mendukung fitur **Obfuscation** tingkat tinggi untuk melindungi logika audit selama fase distribusi:
+- Gunakan `obfuscate_code.bat` untuk memproteksi *source code* menggunakan PyArmor.
+- File hasil proteksi akan berada di direktori `dist/` dalam format terenkripsi yang tetap dapat dieksekusi namun tidak dapat dibaca secara manual.
+
+## 📋 Persyaratan Sistem
+- Windows 10/11 atau Linux (Ubuntu/Debian recommended).
+- Python 3.10 ke atas.
+- Koneksi internet untuk penarikan dependensi otomatis saat inisialisasi pertama.
+
+---
+**BloraHat Security Team**  
+*Dedicated to Infrastructure Resilience and Application Security.*
