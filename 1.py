@@ -466,17 +466,36 @@ def infrastructure_audit():
 
                 # Serangan Probing Khusus Port 8080 (Attack Simulation)
                 if port == 8080:
-                    print(f"      [*] {_decode('TWVtdWxhaSBTZXJhbmdhbiBQcm9iaW5nIHBhZGEgUG9ydCA4MDgwLi4u')}")
+                    print(f"      [*] {_decode('TWVtdWxhaSBTZXJhbmdhbiBQcm9iaW5nIExlYmloIEx1YXMgcGFkYSBQb3J0IDgwODAuLi4=')}")
                     try:
                         p_url = f"http://{domain}:8080/"
+                        
+                        # 0. Audit Insecure HTTP Methods (PUT, DELETE, TRACE)
+                        try:
+                            r_opt = session.options(p_url, timeout=2)
+                            allowed = r_opt.headers.get('Allow', '')
+                            if any(x in allowed for x in ["PUT", "DELETE", "TRACE"]):
+                                print(f"      |_ Check: Insecure Methods ({allowed.strip()}) [\033[91mVULNERABLE!\033[0m]")
+                            else:
+                                print(f"      |_ Check: HTTP Methods Policy      [\033[92mSAFE\033[0m]")
+                        except: pass
+
                         # 1. Cek Kerentanan Directory Listing (Critical Leakage)
                         r8 = session.get(p_url, timeout=3)
                         is_dir_list = _decode("SW5kZXggb2YgLw==") in r8.text
                         status_dir = "[\033[91mVULNERABLE!\033[0m]" if is_dir_list else "[\033[92mSAFE\033[0m]"
                         print(f"      |_ Check: Directory Listing        {status_dir}")
                         
-                        # 2. Scanning Sensitive Admin/Config Path Discovery
-                        for path in ["manager/html", "phpmyadmin", ".env", "config.php"]:
+                        # 2. Advanced Path Discovery (Frameworks, CI/CD, Admin Panels)
+                        # Ref: OWASP & Common Wordlists
+                        attack_paths = [
+                            "manager/html", "phpmyadmin", ".env", "config.php",
+                            "actuator/env", "actuator/heapdump", "actuator/health",
+                            "solr/", "jenkins/script", "api-docs", "v1/api-docs",
+                            "jmx-console/", "console/", "admin/login"
+                        ]
+                        
+                        for path in attack_paths:
                             try:
                                 r_path = session.get(p_url + path, timeout=2)
                                 is_found = r_path.status_code == 200
