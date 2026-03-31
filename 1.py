@@ -467,6 +467,22 @@ def infrastructure_audit():
                         print(f"      |_ HTTP Server  : {server_ver}")
                     except: pass
 
+                # Serangan Probing Khusus Port 8080 (Attack Simulation)
+                if port == 8080:
+                    print(f"      [*] {_decode('TWVtdWxhaSBTZXJhbmdhbiBQcm9iaW5nIHBhZGEgUG9ydCA4MDgwLi4u')}")
+                    try:
+                        p_url = f"http://{domain}:8080/"
+                        # 1. Cek Kerentanan Directory Listing (Critical Leakage)
+                        r8 = session.get(p_url, timeout=3)
+                        if _decode("SW5kZXggb2YgLw==") in r8.text:
+                            print(f"      |_ [\033[91m!\033[0m] {_decode('RGlyZWN0b3J5IExpc3RpbmcgVGVyZGV0ZWtzaSAoQ3JpdGl0YWwp')}")
+                        
+                        # 2. Scanning Sensitive Admin/Config Path Discovery
+                        for path in ["manager/html", "phpmyadmin", ".env", "config.php"]:
+                            if session.get(p_url + path, timeout=2).status_code == 200:
+                                print(f"      |_ [\033[91m!\033[0m] {_decode('U2Vuc2l0aXZlIEFkbWluIFBhdGggRm91bmQ=')}: {path}")
+                    except: pass
+
                 try:
                     sock.send(b"\r\n")
                     banner = sock.recv(1024).decode('utf-8', errors='ignore').strip()
